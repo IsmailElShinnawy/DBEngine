@@ -1,0 +1,5 @@
+Table Name,Column Name,Column Type,ClusteringKey,Indexed,min,max
+test_table,col-D,java.util.Date,false,false,2000-1-1,2000-12-31
+test_table,col-C,java.lang.Integer,false,false,0,150
+test_table,col-B,java.lang.Integer,false,false,0,150
+test_table,col-A,java.lang.Integer,true,false,0,150
