@@ -1,18 +1,22 @@
-import org.junit.jupiter.api.*;
-
-import java.awt.Polygon;
-import java.io.*;
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileReader;
+import java.io.IOException;
+import java.io.PrintWriter;
 import java.nio.file.Files;
-import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.Hashtable;
 import java.util.List;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 //import main.java.*;
+
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.MethodOrderer;
+import org.junit.jupiter.api.Order;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestMethodOrder;
 
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 public class Milestone1Tests {
@@ -40,17 +44,18 @@ public class Milestone1Tests {
         }
 
         if (!lineFound) {
-            throw new Exception("Cannot set page size, make sure that key `MaximumRowsCountinTablePage` is present in DBApp.config");
+            throw new Exception(
+                    "Cannot set page size, make sure that key `MaximumRowsCountinTablePage` is present in DBApp.config");
         }
 
-//        System.out.println("CONFIG" + configFilePath);
+        // System.out.println("CONFIG" + configFilePath);
         Files.write(Paths.get(configFilePath), config);
 
     }
 
     @Test
     @Order(2)
-    public void testClearMetaDataFile() throws Exception{
+    public void testClearMetaDataFile() throws Exception {
 
         String metaFilePath = "src/main/resources/metadata.csv";
         File metaFile = new File(metaFilePath);
@@ -76,15 +81,13 @@ public class Milestone1Tests {
 
         ArrayList<String> files = new ArrayList<>();
         try {
-            files = Files.walk(Paths.get(dataDirPath))
-                    .map(f -> f.toAbsolutePath().toString())
-                    .filter(p -> !Files.isDirectory(Paths.get(p)))
-                    .collect(Collectors.toCollection(ArrayList::new));
+            files = Files.walk(Paths.get(dataDirPath)).map(f -> f.toAbsolutePath().toString())
+                    .filter(p -> !Files.isDirectory(Paths.get(p))).collect(Collectors.toCollection(ArrayList::new));
         } catch (IOException e) {
             e.printStackTrace();
         }
 
-//        System.out.println(files);
+        // System.out.println(files);
         for (String file : files) {
             Files.delete(Paths.get(file));
         }
@@ -112,16 +115,15 @@ public class Milestone1Tests {
         int limit = 500;
 
         insertStudentRecords(dbApp, limit);
-//        dbApp.printTable("students");
+        // dbApp.printTable("students");
         insertCoursesRecords(dbApp, limit);
-//        dbApp.printTable("courses");
+        // dbApp.printTable("courses");
         insertTranscriptsRecords(dbApp, limit);
-//        dbApp.printTable("transcripts");
+        // dbApp.printTable("transcripts");
         insertPCsRecords(dbApp, limit);
-//        dbApp.printTable("pcs");
+        // dbApp.printTable("pcs");
         dbApp = null;
     }
-
 
     @Test
     public void testExtraStudentsInsertion() {
@@ -135,17 +137,14 @@ public class Milestone1Tests {
         row.put("middle_name", "bateekh");
         row.put("last_name", "bar");
 
-
         Date dob = new Date(1995 - 1900, 4 - 1, 1);
         row.put("dob", dob);
 
         row.put("gpa", 1.1);
 
-
         Assertions.assertThrows(DBAppException.class, () -> {
-                    dbApp.insertIntoTable(table, row);
-                }
-        );
+            dbApp.insertIntoTable(table, row);
+        });
 
     }
 
@@ -166,9 +165,8 @@ public class Milestone1Tests {
         row.put("semester", 5);
 
         Assertions.assertThrows(DBAppException.class, () -> {
-                    dbApp.insertIntoTable(table, row);
-                }
-        );
+            dbApp.insertIntoTable(table, row);
+        });
 
     }
 
@@ -184,17 +182,13 @@ public class Milestone1Tests {
         row.put("course_name", "bar");
         row.put("elective", true);
 
-
         Date date_passed = new Date(2011 - 1900, 4 - 1, 1);
         row.put("date_passed", date_passed);
 
-
         Assertions.assertThrows(DBAppException.class, () -> {
-                    dbApp.insertIntoTable(table, row);
-                }
-        );
+            dbApp.insertIntoTable(table, row);
+        });
     }
-
 
     @Test
     public void testExtraPCsInsertion() {
@@ -208,19 +202,18 @@ public class Milestone1Tests {
         row.put("room", "C7.02");
 
         Assertions.assertThrows(DBAppException.class, () -> {
-                    dbApp.insertIntoTable(table, row);
-                }
-        );
+            dbApp.insertIntoTable(table, row);
+        });
     }
 
     @Test
     public void testUpdateStudents() throws Exception {
         DBApp dbApp = new DBApp();
         dbApp.init();
-        
+
         String table = "students";
-//        dbApp.printTable(table);
-        
+        // dbApp.printTable(table);
+
         Hashtable<String, Object> row = new Hashtable();
         row.put("first_name", "foo");
         row.put("last_name", "bar");
@@ -230,7 +223,7 @@ public class Milestone1Tests {
         row.put("gpa", 1.1);
 
         dbApp.updateTable(table, "82-8772", row);
-//        dbApp.printTable(table);
+        // dbApp.printTable(table);
         dbApp = null;
     }
 
@@ -240,16 +233,15 @@ public class Milestone1Tests {
         dbApp.init();
 
         String table = "courses";
-//        dbApp.printTable(table);
+        // dbApp.printTable(table);
         Hashtable<String, Object> row = new Hashtable();
 
         row.put("course_id", "1100");
         row.put("course_name", "bar");
         row.put("hours", 13);
 
-
         dbApp.updateTable(table, "2000-02-23", row);
-//        dbApp.printTable(table);
+        // dbApp.printTable(table);
         dbApp = null;
     }
 
@@ -259,7 +251,7 @@ public class Milestone1Tests {
         dbApp.init();
 
         String table = "transcripts";
-//        dbApp.printTable(table);
+        // dbApp.printTable(table);
         Hashtable<String, Object> row = new Hashtable();
 
         row.put("student_id", "43-9874");
@@ -269,7 +261,7 @@ public class Milestone1Tests {
         row.put("date_passed", date_passed);
 
         dbApp.updateTable(table, "1.5654", row);
-//        dbApp.printTable(table);
+        // dbApp.printTable(table);
     }
 
     @Test
@@ -278,12 +270,12 @@ public class Milestone1Tests {
         dbApp.init();
 
         String table = "pcs";
-//        dbApp.printTable(table);
+        // dbApp.printTable(table);
         Hashtable<String, Object> row = new Hashtable();
         row.put("student_id", "43-12121");
 
         dbApp.updateTable(table, "00353", row);
-//        dbApp.printTable(table);
+        // dbApp.printTable(table);
     }
 
     @Test
@@ -319,7 +311,6 @@ public class Milestone1Tests {
         row.put("course_name", "bar");
         row.put("hours", 13);
         row.put("semester", 5);
-
 
         Assertions.assertThrows(DBAppException.class, () -> {
             dbApp.updateTable(table, "2000-04-01", row);
@@ -363,7 +354,6 @@ public class Milestone1Tests {
             dbApp.updateTable(table, "00353", row);
         });
 
-
     }
 
     @Test
@@ -373,7 +363,7 @@ public class Milestone1Tests {
 
         String table = "students";
         Hashtable<String, Object> row = new Hashtable();
-//        dbApp.printTable(table);
+        // dbApp.printTable(table);
 
         Date dob = new Date(1993 - 1900, 11 - 1, 21);
         row.put("dob", dob);
@@ -381,7 +371,7 @@ public class Milestone1Tests {
         row.put("gpa", 1.23);
 
         dbApp.deleteFromTable(table, row);
-//        dbApp.printTable(table);
+        // dbApp.printTable(table);
 
     }
 
@@ -391,16 +381,15 @@ public class Milestone1Tests {
         dbApp.init();
 
         String table = "courses";
-//        dbApp.printTable(table);
+        // dbApp.printTable(table);
         Hashtable<String, Object> row = new Hashtable();
         Date dateAdded = new Date(2000 - 1900, 6 - 1, 11);
         row.put("date_added", dateAdded);
         row.put("course_name", "hrnenX");
 
         dbApp.deleteFromTable(table, row);
-//        dbApp.printTable(table);
+        // dbApp.printTable(table);
     }
-
 
     @Test
     public void testTranscriptsDeleteComplex() throws Exception {
@@ -408,14 +397,14 @@ public class Milestone1Tests {
         dbApp.init();
 
         String table = "transcripts";
-//        dbApp.printTable(table);
+        // dbApp.printTable(table);
         Hashtable<String, Object> row = new Hashtable();
 
         row.put("course_name", "RpVJUn");
         row.put("gpa", 0.9252);
 
         dbApp.deleteFromTable(table, row);
-//        dbApp.printTable(table);
+        // dbApp.printTable(table);
     }
 
     @Test
@@ -424,15 +413,14 @@ public class Milestone1Tests {
         dbApp.init();
 
         String table = "pcs";
-//        dbApp.printTable(table);
+        // dbApp.printTable(table);
         Hashtable<String, Object> row = new Hashtable();
         row.put("pc_id", 18764);
         row.put("student_id", "93-3721");
 
         dbApp.deleteFromTable(table, row);
-//        dbApp.printTable(table);
+        // dbApp.printTable(table);
     }
-
 
     private void insertStudentRecords(DBApp dbApp, int limit) throws Exception {
         BufferedReader studentsTable = new BufferedReader(new FileReader("src/main/resources/students_table.csv"));
@@ -454,7 +442,7 @@ public class Milestone1Tests {
             int month = Integer.parseInt(fields[3].trim().substring(5, 7));
             int day = Integer.parseInt(fields[3].trim().substring(8));
 
-//            System.out.println(year + " " + month + " " + day);
+            // System.out.println(year + " " + month + " " + day);
             Date dob = new Date(year - 1900, month - 1, day);
             row.put("dob", dob);
 
@@ -482,8 +470,6 @@ public class Milestone1Tests {
         while ((record = coursesTable.readLine()) != null && c > 0) {
             String[] fields = record.split(",");
 
-
-
             int year = Integer.parseInt(fields[0].trim().substring(0, 4));
             int month = Integer.parseInt(fields[0].trim().substring(5, 7));
             int day = Integer.parseInt(fields[0].trim().substring(8));
@@ -508,7 +494,8 @@ public class Milestone1Tests {
     }
 
     private void insertTranscriptsRecords(DBApp dbApp, int limit) throws Exception {
-        BufferedReader transcriptsTable = new BufferedReader(new FileReader("src/main/resources/transcripts_table.csv"));
+        BufferedReader transcriptsTable = new BufferedReader(
+                new FileReader("src/main/resources/transcripts_table.csv"));
         String record;
         Hashtable<String, Object> row = new Hashtable<>();
         int c = limit;
@@ -594,7 +581,6 @@ public class Milestone1Tests {
         dbApp.createTable(tableName, "id", htblColNameType, minValues, maxValues);
     }
 
-
     private void createCoursesTable(DBApp dbApp) throws Exception {
         // Date CK
         String tableName = "courses";
@@ -604,7 +590,6 @@ public class Milestone1Tests {
         htblColNameType.put("course_id", "java.lang.String");
         htblColNameType.put("course_name", "java.lang.String");
         htblColNameType.put("hours", "java.lang.Integer");
-
 
         Hashtable<String, String> minValues = new Hashtable<>();
         minValues.put("date_added", "1901-01-01");
@@ -647,7 +632,6 @@ public class Milestone1Tests {
         dbApp.createTable(tableName, "gpa", htblColNameType, minValues, maxValues);
     }
 
-
     private void createPCsTable(DBApp dbApp) throws Exception {
         // Integer CK
         String tableName = "pcs";
@@ -655,7 +639,6 @@ public class Milestone1Tests {
         Hashtable<String, String> htblColNameType = new Hashtable<String, String>();
         htblColNameType.put("pc_id", "java.lang.Integer");
         htblColNameType.put("student_id", "java.lang.String");
-
 
         Hashtable<String, String> minValues = new Hashtable<>();
         minValues.put("pc_id", "0");
@@ -668,4 +651,3 @@ public class Milestone1Tests {
         dbApp.createTable(tableName, "pc_id", htblColNameType, minValues, maxValues);
     }
 }
-

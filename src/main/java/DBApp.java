@@ -841,63 +841,60 @@ public class DBApp implements DBAppInterface {
 
 		Hashtable<String, String> colNameMax = new Hashtable<String, String>();
 		colNameMax.put("col-A", "150");
-		colNameMax.put("col-B", "150");
+		colNameMax.put("col-B", "155");
 		colNameMax.put("col-C", "150");
 		colNameMax.put("col-D", "2000-12-31");
 
 		dbApp.createTable("test_table", "col-A", colNameType, colNameMin, colNameMax);
 		dbApp.createIndex("test_table", new String[] { "col-B", "col-D" });
-		//
-		// for(int i = 0; i < 150; ++i) {
-		// int colA = i;
-		// int colB = i;
-		// int colC = (int) (Math.random() * 150);
-		// Date colD = new Date(2000 - 1900, (int) (Math.random() * 12), (int)
-		// (Math.random() * 28) + 1);
-		// Hashtable<String, Object> colNameValue = new Hashtable<String, Object>();
-		// colNameValue.put("col-A", colA);
-		// colNameValue.put("col-B", colB);
-		// colNameValue.put("col-C", colC);
-		// colNameValue.put("col-D", colD);
-		// try {
-		// dbApp.insertIntoTable("test_table", colNameValue);
-		// } catch (Exception e) {
-		// System.out.println(e.getMessage());
-		// }
-		// }
-		//
-		// dbApp.printTable("test_table");
-		//
-		// dbApp.createIndex("test_table", new String[] {"col-B", "col-D"});
-		//
-		// dbApp.printIndexFromTable(0, "test_table"); // prints index created before
-		// insertion
-		// System.out.println("-----------------------------------------------------------");
-		// dbApp.printIndexFromTable(1, "test_table"); // prints index created after
-		// insertion
+
+		for (int i = 0; i < 150; ++i) {
+			int colA = i;
+			int colB = i;
+			int colC = (int) (Math.random() * 150);
+			Date colD = new Date(2000 - 1900, (int) (Math.random() * 12), (int) (Math.random() * 28) + 1);
+			Hashtable<String, Object> colNameValue = new Hashtable<String, Object>();
+			colNameValue.put("col-A", colA);
+			colNameValue.put("col-B", colB);
+			colNameValue.put("col-C", colC);
+			colNameValue.put("col-D", colD);
+			try {
+				dbApp.insertIntoTable("test_table", colNameValue);
+			} catch (Exception e) {
+				System.out.println(e.getMessage());
+			}
+		}
+
+		dbApp.printTable("test_table");
+
+		dbApp.createIndex("test_table", new String[] { "col-B", "col-D" });
+
+		dbApp.printIndexFromTable(0, "test_table"); // prints index created before insertion
+		System.out.println("-----------------------------------------------------------");
+		dbApp.printIndexFromTable(1, "test_table"); // prints index created after insertion
 
 		// tests update with index
 
-		Hashtable<String, Object> htblColNameValue = new Hashtable<String, Object>();
-		htblColNameValue.put("col-A", 1);
-		htblColNameValue.put("col-B", 1);
-		htblColNameValue.put("col-C", 1);
-		htblColNameValue.put("col-D", new Date(2000 - 1900, 5 - 1, 4));
+		// Hashtable<String, Object> htblColNameValue = new Hashtable<String, Object>();
+		// htblColNameValue.put("col-A", 1);
+		// htblColNameValue.put("col-B", 1);
+		// htblColNameValue.put("col-C", 1);
+		// htblColNameValue.put("col-D", new Date(2000 - 1900, 5 - 1, 4));
 
-		dbApp.insertIntoTable("test_table", htblColNameValue);
+		// dbApp.insertIntoTable("test_table", htblColNameValue);
 
-		dbApp.printTable("test_table");
-		dbApp.printIndexFromTable(0, "test_table");
+		// dbApp.printTable("test_table");
+		// dbApp.printIndexFromTable(0, "test_table");
 
-		htblColNameValue.clear();
-		htblColNameValue.put("col-B", 16);
-		htblColNameValue.put("col-D", new Date(2000 - 1900, 5 - 1, 4));
+		// htblColNameValue.clear();
+		// htblColNameValue.put("col-B", 16);
+		// htblColNameValue.put("col-D", new Date(2000 - 1900, 5 - 1, 4));
 
-		dbApp.updateTable("test_table", "1", htblColNameValue);
+		// dbApp.updateTable("test_table", "1", htblColNameValue);
 
-		dbApp.printTable("test_table");
+		// dbApp.printTable("test_table");
 
-		dbApp.printIndexFromTable(0, "test_table");
+		// dbApp.printIndexFromTable(0, "test_table");
 
 	}
 

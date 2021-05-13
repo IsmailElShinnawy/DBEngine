@@ -227,11 +227,11 @@ public class Table implements Serializable {
 	 * @throws ClassNotFoundException when loading is not successful
 	 * @throws IOException            when I/O failure occurs
 	 */
-	
+
 	// MISSING use of index built on clustering key if exists
 	public void updateBS(Comparable clusteringKeyValue, Hashtable<String, Object> htblColNameValue)
 			throws ClassNotFoundException, IOException {
-		
+
 		// binary search using the clustering key column to find page index if it exists
 		int lo = 0, hi = pages.size() - 1, res = -1;
 		while (lo <= hi) {
@@ -247,20 +247,19 @@ public class Table implements Serializable {
 
 		if (res != -1) { // if page index is found then load it to memory and update it
 			Page page = getPage(res);
-			
+
 			Tuple tuple = page.getTuple(clusteringKeyValue); // gets tuple before update
-			for(GridIndex gi: indices) { // remove references of old tuple from indices
+			for (GridIndex gi : indices) { // remove references of old tuple from indices
 				gi.remove(tuple.getValues());
-//				System.out.println("*******************************************");
-//				System.out.println(gi);
 			}
-			
-			Tuple updatedTuple = page.update(clusteringKeyValue, htblColNameValue); // update tuple in page and get an instance of updated tuple
-			// update all indices knowing the page name and knowing the position of the tuple
-			for(GridIndex gi: indices) {
+			// update tuple in page and get an instance of updated tuple
+			Tuple updatedTuple = page.update(clusteringKeyValue, htblColNameValue);
+			// update all indices knowing the page name and knowing the position of the
+			// tuple
+			for (GridIndex gi : indices) {
 				gi.insert(htblColNameValue, pages.get(res), page.getIndexOf(clusteringKeyValue));
 			}
-			
+
 			save();
 		} else { // if not then no tuple exists with this clustering key
 			System.out.println("No such record exist");
@@ -350,42 +349,42 @@ public class Table implements Serializable {
 		for (SQLTerm sqlTerm : sqlTerms) {
 			String op = sqlTerm._strOperator;
 			switch (op) {
-			case "=": // special treatment with double values
-				flag &= tuple.checkKeyValue(sqlTerm._strColumnName, sqlTerm._objValue);
-				break;
-			case "!=":
-				flag &= !tuple.checkKeyValue(sqlTerm._strColumnName, sqlTerm._objValue);
-				break;
-			case "<":
-				value = getComparable(sqlTerm._objValue, htblColNameType.get(sqlTerm._strColumnName));
-				// if tuple value is null??
-				tValue = getComparable(tuple.getValue(sqlTerm._strColumnName),
-						htblColNameType.get(sqlTerm._strColumnName));
-				flag &= tValue.compareTo(value) < 0;
-				break;
-			case ">":
-				value = getComparable(sqlTerm._objValue, htblColNameType.get(sqlTerm._strColumnName));
-				// if tuple value is null??
-				tValue = getComparable(tuple.getValue(sqlTerm._strColumnName),
-						htblColNameType.get(sqlTerm._strColumnName));
-				flag &= tValue.compareTo(value) > 0;
-				break;
-			case "<=": // special treatment with doubles
-				value = getComparable(sqlTerm._objValue, htblColNameType.get(sqlTerm._strColumnName));
-				// if tuple value is null??
-				tValue = getComparable(tuple.getValue(sqlTerm._strColumnName),
-						htblColNameType.get(sqlTerm._strColumnName));
-				flag &= tValue.compareTo(value) <= 0;
-				break;
-			case ">=":
-				value = getComparable(sqlTerm._objValue, htblColNameType.get(sqlTerm._strColumnName));
-				// if tuple value is null??
-				tValue = getComparable(tuple.getValue(sqlTerm._strColumnName),
-						htblColNameType.get(sqlTerm._strColumnName));
-				flag &= tValue.compareTo(value) >= 0;
-				break;
-			default:
-				break;
+				case "=": // special treatment with double values
+					flag &= tuple.checkKeyValue(sqlTerm._strColumnName, sqlTerm._objValue);
+					break;
+				case "!=":
+					flag &= !tuple.checkKeyValue(sqlTerm._strColumnName, sqlTerm._objValue);
+					break;
+				case "<":
+					value = getComparable(sqlTerm._objValue, htblColNameType.get(sqlTerm._strColumnName));
+					// if tuple value is null??
+					tValue = getComparable(tuple.getValue(sqlTerm._strColumnName),
+							htblColNameType.get(sqlTerm._strColumnName));
+					flag &= tValue.compareTo(value) < 0;
+					break;
+				case ">":
+					value = getComparable(sqlTerm._objValue, htblColNameType.get(sqlTerm._strColumnName));
+					// if tuple value is null??
+					tValue = getComparable(tuple.getValue(sqlTerm._strColumnName),
+							htblColNameType.get(sqlTerm._strColumnName));
+					flag &= tValue.compareTo(value) > 0;
+					break;
+				case "<=": // special treatment with doubles
+					value = getComparable(sqlTerm._objValue, htblColNameType.get(sqlTerm._strColumnName));
+					// if tuple value is null??
+					tValue = getComparable(tuple.getValue(sqlTerm._strColumnName),
+							htblColNameType.get(sqlTerm._strColumnName));
+					flag &= tValue.compareTo(value) <= 0;
+					break;
+				case ">=":
+					value = getComparable(sqlTerm._objValue, htblColNameType.get(sqlTerm._strColumnName));
+					// if tuple value is null??
+					tValue = getComparable(tuple.getValue(sqlTerm._strColumnName),
+							htblColNameType.get(sqlTerm._strColumnName));
+					flag &= tValue.compareTo(value) >= 0;
+					break;
+				default:
+					break;
 			}
 		}
 		return flag;
@@ -397,42 +396,42 @@ public class Table implements Serializable {
 		for (SQLTerm sqlTerm : sqlTerms) {
 			String op = sqlTerm._strOperator;
 			switch (op) {
-			case "=": // special treatment with double values
-				flag |= tuple.checkKeyValue(sqlTerm._strColumnName, sqlTerm._objValue);
-				break;
-			case "!=":
-				flag |= !tuple.checkKeyValue(sqlTerm._strColumnName, sqlTerm._objValue);
-				break;
-			case "<":
-				value = getComparable(sqlTerm._objValue, htblColNameType.get(sqlTerm._strColumnName));
-				// if tuple value is null??
-				tValue = getComparable(tuple.getValue(sqlTerm._strColumnName),
-						htblColNameType.get(sqlTerm._strColumnName));
-				flag |= tValue.compareTo(value) < 0;
-				break;
-			case ">":
-				value = getComparable(sqlTerm._objValue, htblColNameType.get(sqlTerm._strColumnName));
-				// if tuple value is null??
-				tValue = getComparable(tuple.getValue(sqlTerm._strColumnName),
-						htblColNameType.get(sqlTerm._strColumnName));
-				flag |= tValue.compareTo(value) > 0;
-				break;
-			case "<=": // special treatment with doubles
-				value = getComparable(sqlTerm._objValue, htblColNameType.get(sqlTerm._strColumnName));
-				// if tuple value is null??
-				tValue = getComparable(tuple.getValue(sqlTerm._strColumnName),
-						htblColNameType.get(sqlTerm._strColumnName));
-				flag |= tValue.compareTo(value) <= 0;
-				break;
-			case ">=":
-				value = getComparable(sqlTerm._objValue, htblColNameType.get(sqlTerm._strColumnName));
-				// if tuple value is null??
-				tValue = getComparable(tuple.getValue(sqlTerm._strColumnName),
-						htblColNameType.get(sqlTerm._strColumnName));
-				flag |= tValue.compareTo(value) >= 0;
-				break;
-			default:
-				break;
+				case "=": // special treatment with double values
+					flag |= tuple.checkKeyValue(sqlTerm._strColumnName, sqlTerm._objValue);
+					break;
+				case "!=":
+					flag |= !tuple.checkKeyValue(sqlTerm._strColumnName, sqlTerm._objValue);
+					break;
+				case "<":
+					value = getComparable(sqlTerm._objValue, htblColNameType.get(sqlTerm._strColumnName));
+					// if tuple value is null??
+					tValue = getComparable(tuple.getValue(sqlTerm._strColumnName),
+							htblColNameType.get(sqlTerm._strColumnName));
+					flag |= tValue.compareTo(value) < 0;
+					break;
+				case ">":
+					value = getComparable(sqlTerm._objValue, htblColNameType.get(sqlTerm._strColumnName));
+					// if tuple value is null??
+					tValue = getComparable(tuple.getValue(sqlTerm._strColumnName),
+							htblColNameType.get(sqlTerm._strColumnName));
+					flag |= tValue.compareTo(value) > 0;
+					break;
+				case "<=": // special treatment with doubles
+					value = getComparable(sqlTerm._objValue, htblColNameType.get(sqlTerm._strColumnName));
+					// if tuple value is null??
+					tValue = getComparable(tuple.getValue(sqlTerm._strColumnName),
+							htblColNameType.get(sqlTerm._strColumnName));
+					flag |= tValue.compareTo(value) <= 0;
+					break;
+				case ">=":
+					value = getComparable(sqlTerm._objValue, htblColNameType.get(sqlTerm._strColumnName));
+					// if tuple value is null??
+					tValue = getComparable(tuple.getValue(sqlTerm._strColumnName),
+							htblColNameType.get(sqlTerm._strColumnName));
+					flag |= tValue.compareTo(value) >= 0;
+					break;
+				default:
+					break;
 			}
 		}
 		return flag;
@@ -495,20 +494,20 @@ public class Table implements Serializable {
 	private Comparable getComparable(Object o, String type) {
 		Comparable res = null;
 		switch (type) {
-		case "java.lang.Integer":
-			res = (Integer) o;
-			break;
-		case "java.lang.String":
-			res = (String) o;
-			break;
-		case "java.lang.Double":
-			res = (Double) o;
-			break;
-		case "java.util.Date":
-			res = (Date) o;
-			break;
-		default:
-			break;
+			case "java.lang.Integer":
+				res = (Integer) o;
+				break;
+			case "java.lang.String":
+				res = (String) o;
+				break;
+			case "java.lang.Double":
+				res = (Double) o;
+				break;
+			case "java.util.Date":
+				res = (Date) o;
+				break;
+			default:
+				break;
 		}
 		return res;
 	}

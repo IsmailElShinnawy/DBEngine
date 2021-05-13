@@ -49,7 +49,7 @@ public class GridIndex implements Serializable {
 	private int bucketIdx = 0, maxBucketSize, indexId;
 	private String path;
 
-	// missing support for String columns
+	// missing support for String and Double columns
 	// missing making sure that max value is included in a range
 	// missing support for null values
 	// missing support for overflow pages
@@ -64,21 +64,24 @@ public class GridIndex implements Serializable {
 		colNameRanges = new Hashtable<String, MinMax[]>();
 
 		int cols = 10; // number of columns in array
-		for (int i = 0; i < strarrColName.length; i++) { // loop on each column
-			MinMax[] ranges = new MinMax[cols];
+		for (int i = 0; i < strarrColName.length; ++i) { // loop on each column
 			// needs a little modification for Doubles
-			if (colNameType.get(strarrColName[i]).equals("java.lang.Integer")
-					|| colNameType.get(strarrColName[i]).equals("java.lang.Double")) {
+			MinMax ranges[] = null;
+			if (colNameType.get(strarrColName[i]).equals("java.lang.Integer")) {
 				int min = Integer.parseInt(minValues.get(strarrColName[i]));
 				int max = Integer.parseInt(maxValues.get(strarrColName[i]));
-				int range = max - min + 1;
+				int range = max - min;
 				int step = range / cols; // step value
-				int start = min;
-				int end = min + step;
-				for (int j = 0; j < cols; j++) { // set ranges for each column
+				cols += (range % cols == 0) ? 0 : 1;
+				ranges = new MinMax[cols];
+				int start = min, end = min + step;
+				for (int j = 0; j < cols; ++j) { // set ranges for each column
 					ranges[j] = new MinMax(start, end);
 					start += step;
 					end += step;
+				}
+				if (ranges.length == cols + 1) {
+					ranges[ranges.length - 1] = new MinMax(ranges[ranges.length - 2].getMin(), max);
 				}
 			} else if (colNameType.get(strarrColName[i]).equals("java.util.Date")) {
 				SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
@@ -86,6 +89,8 @@ public class GridIndex implements Serializable {
 				Date max = sdf.parse(maxValues.get(strarrColName[i]));
 				long range = (max.getTime() - min.getTime()) / (1000 * 60 * 60 * 24); // number of days difference
 				int step = (int) (range / cols);
+				cols += (range % cols == 0) ? 0 : 1;
+				ranges = new MinMax[cols];
 				Date start = min;
 				Calendar c = Calendar.getInstance();
 				c.setTime(min);
@@ -104,6 +109,10 @@ public class GridIndex implements Serializable {
 					c.add(Calendar.DAY_OF_MONTH, step);
 					end = c.getTime();
 				}
+
+				if (ranges.length == cols + 1) {
+					ranges[ranges.length - 1] = new MinMax(ranges[ranges.length - 2].getMin(), max);
+				}
 			}
 
 			colNameRanges.put(strarrColName[i], ranges);
@@ -113,7 +122,7 @@ public class GridIndex implements Serializable {
 		for (Entry<String, MinMax[]> e : colNameRanges.entrySet()) {
 			size *= e.getValue().length;
 		}
-		
+
 		grid = new Vector[size];
 		for (int i = 0; i < size; ++i) {
 			grid[i] = new Vector<String>();
@@ -130,49 +139,50 @@ public class GridIndex implements Serializable {
 			grid[oneDIdx].add(bucket.getPath());
 			bucket.insert(pageName, row);
 		} else {
-			
+
 			boolean inserted = false;
-			
-			for(String bucketName: grid[oneDIdx]) {
+
+			for (String bucketName : grid[oneDIdx]) {
 				Bucket b = loadBucket(bucketName);
-				if(!b.isFull()) {
+				if (!b.isFull()) {
 					b.insert(pageName, row);
 					inserted = true;
 					break;
 				}
 			}
-			
-			if(!inserted) {
+
+			if (!inserted) {
 				Bucket bucket = createBucket();
 				grid[oneDIdx].add(bucket.getPath());
 				bucket.insert(pageName, row);
 			}
 		}
 	}
-	
+
 	public void remove(Hashtable<String, Object> htblColNameValue) throws ClassNotFoundException, IOException {
 		int oneDIdx = get1DIdx(htblColNameValue);
-		for(String bucketName: grid[oneDIdx]) {
+		for (String bucketName : grid[oneDIdx]) {
 			Bucket b = loadBucket(bucketName);
-			if(b.remove(htblColNameValue)){
+			if (b.remove(htblColNameValue)) {
 				// need to check if bucket is empty then delete it from disk
-				if(b.isEmpty()) {
+				if (b.isEmpty()) {
 					deleteBucket(oneDIdx, bucketName);
 				}
 				return;
 			}
 		}
 	}
-	
-	public void increment(String pageName, int idx, String ofPage, int maxPageSize) throws ClassNotFoundException, IOException, DBAppException {
-		for(Vector<String> vector: grid) {
-			for(String bucketName: vector) {
+
+	public void increment(String pageName, int idx, String ofPage, int maxPageSize)
+			throws ClassNotFoundException, IOException, DBAppException {
+		for (Vector<String> vector : grid) {
+			for (String bucketName : vector) {
 				Bucket b = loadBucket(bucketName);
 				b.increment(pageName, idx, ofPage, maxPageSize);
 			}
 		}
 	}
-	
+
 	private int get1DIdx(Hashtable<String, Object> htblColNameValue) {
 		Hashtable<String, Integer> colNamePos = new Hashtable<String, Integer>();
 		for (Entry<String, MinMax[]> e : colNameRanges.entrySet()) {
@@ -182,8 +192,10 @@ public class GridIndex implements Serializable {
 			// should be binary search
 			MinMax[] range = e.getValue();
 			for (int i = 0; i < range.length; ++i) {
-				if (value.compareTo((Comparable) range[i].getMin()) >= 0
-						&& value.compareTo((Comparable) range[i].getMax()) < 0) {
+				if ((value.compareTo((Comparable) range[i].getMin()) >= 0
+						&& value.compareTo((Comparable) range[i].getMax()) < 0)
+						|| (i == range.length - 1 && value.compareTo((Comparable) range[i].getMin()) >= 0
+								&& value.compareTo((Comparable) range[i].getMax()) <= 0)) {
 					colNamePos.put(e.getKey(), i);
 					break;
 				}
@@ -195,7 +207,7 @@ public class GridIndex implements Serializable {
 			oneDIdx += (res * e.getValue());
 			res *= colNameRanges.get(e.getKey()).length;
 		}
-		
+
 		return oneDIdx;
 	}
 
@@ -210,13 +222,13 @@ public class GridIndex implements Serializable {
 		ois.close();
 		return res;
 	}
-	
+
 	private void deleteBucket(int idx, String bucketName) {
 		grid[idx].remove(bucketName);
-		File file =  new File(bucketName);
+		File file = new File(bucketName);
 		file.delete();
 	}
-	
+
 	public boolean isOnColumn(String colName) {
 		return colNameRanges.containsKey(colName);
 	}
