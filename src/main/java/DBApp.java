@@ -848,11 +848,16 @@ public class DBApp implements DBAppInterface {
 		dbApp.createTable("test_table", "col-A", colNameType, colNameMin, colNameMax);
 		dbApp.createIndex("test_table", new String[] { "col-B", "col-D" });
 
-		for (int i = 0; i < 150; ++i) {
+		for (int i = 0; i < 15; ++i) {
 			int colA = i;
 			int colB = i;
 			int colC = (int) (Math.random() * 150);
-			Date colD = new Date(2000 - 1900, (int) (Math.random() * 12), (int) (Math.random() * 28) + 1);
+			Date colD = null;
+			if (colB == 10) {
+				colD = new Date(2000 - 1900, 4 - 1, 10);
+			} else {
+				colD = new Date(2000 - 1900, (int) (Math.random() * 12), (int) (Math.random() * 28) + 1);
+			}
 			Hashtable<String, Object> colNameValue = new Hashtable<String, Object>();
 			colNameValue.put("col-A", colA);
 			colNameValue.put("col-B", colB);
@@ -867,11 +872,12 @@ public class DBApp implements DBAppInterface {
 
 		dbApp.printTable("test_table");
 
-		dbApp.createIndex("test_table", new String[] { "col-B", "col-D" });
+		// dbApp.createIndex("test_table", new String[] { "col-B", "col-D" });
 
 		dbApp.printIndexFromTable(0, "test_table"); // prints index created before insertion
-		System.out.println("-----------------------------------------------------------");
-		dbApp.printIndexFromTable(1, "test_table"); // prints index created after insertion
+		// System.out.println("-----------------------------------------------------------");
+		// dbApp.printIndexFromTable(1, "test_table"); // prints index created after
+		// insertion
 
 		// tests update with index
 
@@ -895,6 +901,14 @@ public class DBApp implements DBAppInterface {
 		// dbApp.printTable("test_table");
 
 		// dbApp.printIndexFromTable(0, "test_table");
+
+		// test delete with index
+
+		Hashtable<String, Object> htblColNameValue = new Hashtable<String, Object>();
+		htblColNameValue.put("col-B", 10);
+		htblColNameValue.put("col-D", new Date(2000 - 1900, 4 - 1, 10));
+
+		dbApp.deleteFromTable("test_table", htblColNameValue);
 
 	}
 

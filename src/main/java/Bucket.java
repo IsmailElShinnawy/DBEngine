@@ -41,14 +41,12 @@ public class Bucket implements Serializable {
 	 */
 	private static final long serialVersionUID = 1L;
 	private Vector<Pair> refs;
-	private int maxSize, indexId, bucketId;
+	private int maxSize;
 	private String tableDir, path;
 
 	public Bucket(String path, int indexId, int bucketId, int maxSize) throws IOException {
 		this.tableDir = path;
 		this.path = path + "index_" + indexId + "_bucket_" + bucketId + ".class";
-		this.indexId = indexId;
-		this.bucketId = bucketId;
 		this.maxSize = maxSize;
 		this.refs = new Vector<Pair>();
 	}
@@ -85,9 +83,8 @@ public class Bucket implements Serializable {
 				p.rowNumber++;
 				if (p.rowNumber == maxPageSize) {
 					if (ofPage == null) {
-						throw new DBAppException("Internal engine error, overflow set to null, but needed"); // just for
-																												// debugging
-																												// purposes
+						// just for debugging purposes
+						throw new DBAppException("Internal engine error, overflow set to null, but needed");
 					}
 					p.rowNumber = 0;
 					p.pageName = ofPage;
@@ -100,13 +97,17 @@ public class Bucket implements Serializable {
 	public boolean isFull() {
 		return refs.size() == maxSize;
 	}
-	
+
 	public boolean isEmpty() {
 		return refs.size() == 0;
 	}
 
 	public String getPath() {
 		return path;
+	}
+
+	public Vector<Pair> getRefs() {
+		return refs;
 	}
 
 	public void save() throws IOException {

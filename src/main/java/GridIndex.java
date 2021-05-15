@@ -9,7 +9,10 @@ import java.util.Arrays;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.Hashtable;
+import java.util.Iterator;
+import java.util.LinkedList;
 import java.util.Map.Entry;
+import java.util.Set;
 import java.util.Vector;
 
 public class GridIndex implements Serializable {
@@ -50,9 +53,7 @@ public class GridIndex implements Serializable {
 	private String path;
 
 	// missing support for String and Double columns
-	// missing making sure that max value is included in a range
 	// missing support for null values
-	// missing support for overflow pages
 	public GridIndex(String[] strarrColName, Hashtable<String, String> colNameType, Hashtable<String, String> minValues,
 			Hashtable<String, String> maxValues, int maxBucketSize, int indexId, String path)
 			throws DBAppException, ParseException {
@@ -65,15 +66,13 @@ public class GridIndex implements Serializable {
 
 		int cols = 10; // number of columns in array
 		for (int i = 0; i < strarrColName.length; ++i) { // loop on each column
-			// needs a little modification for Doubles
 			MinMax ranges[] = null;
 			if (colNameType.get(strarrColName[i]).equals("java.lang.Integer")) {
 				int min = Integer.parseInt(minValues.get(strarrColName[i]));
 				int max = Integer.parseInt(maxValues.get(strarrColName[i]));
 				int range = max - min;
 				int step = range / cols; // step value
-				cols += (range % cols == 0) ? 0 : 1;
-				ranges = new MinMax[cols];
+				ranges = new MinMax[cols + (range % cols == 0 ? 0 : 1)];
 				int start = min, end = min + step;
 				for (int j = 0; j < cols; ++j) { // set ranges for each column
 					ranges[j] = new MinMax(start, end);
@@ -81,7 +80,7 @@ public class GridIndex implements Serializable {
 					end += step;
 				}
 				if (ranges.length == cols + 1) {
-					ranges[ranges.length - 1] = new MinMax(ranges[ranges.length - 2].getMin(), max);
+					ranges[ranges.length - 1] = new MinMax(ranges[ranges.length - 2].getMax(), max);
 				}
 			} else if (colNameType.get(strarrColName[i]).equals("java.util.Date")) {
 				SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
@@ -89,8 +88,7 @@ public class GridIndex implements Serializable {
 				Date max = sdf.parse(maxValues.get(strarrColName[i]));
 				long range = (max.getTime() - min.getTime()) / (1000 * 60 * 60 * 24); // number of days difference
 				int step = (int) (range / cols);
-				cols += (range % cols == 0) ? 0 : 1;
-				ranges = new MinMax[cols];
+				ranges = new MinMax[cols + (range % cols == 0 ? 0 : 1)];
 				Date start = min;
 				Calendar c = Calendar.getInstance();
 				c.setTime(min);
@@ -111,7 +109,7 @@ public class GridIndex implements Serializable {
 				}
 
 				if (ranges.length == cols + 1) {
-					ranges[ranges.length - 1] = new MinMax(ranges[ranges.length - 2].getMin(), max);
+					ranges[ranges.length - 1] = new MinMax(ranges[ranges.length - 2].getMax(), max);
 				}
 			}
 
@@ -164,7 +162,6 @@ public class GridIndex implements Serializable {
 		for (String bucketName : grid[oneDIdx]) {
 			Bucket b = loadBucket(bucketName);
 			if (b.remove(htblColNameValue)) {
-				// need to check if bucket is empty then delete it from disk
 				if (b.isEmpty()) {
 					deleteBucket(oneDIdx, bucketName);
 				}
@@ -181,6 +178,59 @@ public class GridIndex implements Serializable {
 				b.increment(pageName, idx, ofPage, maxPageSize);
 			}
 		}
+	}
+
+	public Iterator<Bucket.Pair> get(Hashtable<String, Object> htblColNameValue)
+			throws ClassNotFoundException, IOException {
+
+		Hashtable<String, Integer> htblColNameIdx = new Hashtable<String, Integer>();
+		for (Entry<String, Object> e : htblColNameValue.entrySet()) {
+			Comparable value = (Comparable) e.getValue();
+			if (colNameRanges.containsKey(e.getKey())) {
+				MinMax range[] = colNameRanges.get(e.getKey());
+				for (int i = 0; i < range.length; ++i) {
+					if ((value.compareTo((Comparable) range[i].getMin()) >= 0
+							&& value.compareTo((Comparable) range[i].getMax()) < 0)
+							|| (i == range.length - 1 && value.compareTo((Comparable) range[i].getMin()) >= 0
+									&& value.compareTo((Comparable) range[i].getMax()) <= 0)) {
+						htblColNameIdx.put(e.getKey(), i);
+						break;
+					}
+				}
+			}
+		}
+
+		System.out.println(htblColNameIdx + "*******************************************");
+
+		LinkedList<Bucket.Pair> ll = new LinkedList<Bucket.Pair>();
+
+		for (int i = 0; i < grid.length; ++i) {
+			Hashtable<String, Integer> map = new Hashtable<String, Integer>();
+			int res = i;
+			for (Entry<String, MinMax[]> e : colNameRanges.entrySet()) {
+				map.put(e.getKey(), res % e.getValue().length);
+				res /= e.getValue().length;
+			}
+
+			boolean flag = true;
+			for (Entry<String, Integer> e : htblColNameIdx.entrySet()) {
+				flag &= e.getValue().equals(map.get(e.getKey()));
+			}
+
+			if (flag) {
+				// System.out.println("in");
+				// System.out.println(map);
+				System.out.println(i);
+				for (String bucketName : grid[i]) {
+					Bucket b = loadBucket(bucketName);
+					for (Bucket.Pair pair : b.getRefs()) {
+						ll.add(pair);
+					}
+				}
+			}
+		}
+
+		return ll.iterator();
 	}
 
 	private int get1DIdx(Hashtable<String, Object> htblColNameValue) {
@@ -203,9 +253,13 @@ public class GridIndex implements Serializable {
 		}
 
 		int oneDIdx = 0, res = 1;
-		for (Entry<String, Integer> e : colNamePos.entrySet()) {
-			oneDIdx += (res * e.getValue());
-			res *= colNameRanges.get(e.getKey()).length;
+		// for (Entry<String, Integer> e : colNamePos.entrySet()) {
+		// oneDIdx += (res * e.getValue());
+		// res *= colNameRanges.get(e.getKey()).length;
+		// }
+		for (Entry<String, MinMax[]> e : colNameRanges.entrySet()) {
+			oneDIdx += (res * colNamePos.get(e.getKey()));
+			res *= e.getValue().length;
 		}
 
 		return oneDIdx;
@@ -231,6 +285,10 @@ public class GridIndex implements Serializable {
 
 	public boolean isOnColumn(String colName) {
 		return colNameRanges.containsKey(colName);
+	}
+
+	public Set<String> getColumns() {
+		return colNameRanges.keySet();
 	}
 
 	public String toString() {

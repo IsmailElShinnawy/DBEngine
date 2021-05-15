@@ -301,23 +301,38 @@ public class Table implements Serializable {
 				}
 			}
 		} else { // do linear search
-			ObjectInputStream ois = null;
-			// loop over available pages
-			for (int i = 0; i < pages.size(); ++i) {
-				// load page to memory
-				ois = new ObjectInputStream(new FileInputStream(path + pages.get(i)));
-				Page page = (Page) ois.readObject();
 
-				// delete tuples in page with corresponding values
-				page.delete(htblColNameValue);
+			// use first index that is in table
+			GridIndex gridIndex = indices.firstElement();
 
-				// if page becomes empty after deletion then delete the page from disk
-				if (page.isEmpty()) {
-					deletePages(i, 1);
-					i--;
-				}
-				ois.close();
+			Iterator<Bucket.Pair> itr = gridIndex.get(htblColNameValue);
+
+			if (!itr.hasNext())
+				System.out.println("error"); // just for debugging
+
+			while (itr.hasNext()) {
+				System.out.println(itr.next());
 			}
+
+			// **************************************SHOULD BE UNCOMMENTED
+
+			// ObjectInputStream ois = null;
+			// // loop over available pages
+			// for (int i = 0; i < pages.size(); ++i) {
+			// // load page to memory
+			// ois = new ObjectInputStream(new FileInputStream(path + pages.get(i)));
+			// Page page = (Page) ois.readObject();
+
+			// // delete tuples in page with corresponding values
+			// page.delete(htblColNameValue);
+
+			// // if page becomes empty after deletion then delete the page from disk
+			// if (page.isEmpty()) {
+			// deletePages(i, 1);
+			// i--;
+			// }
+			// ois.close();
+			// }
 		}
 	}
 
