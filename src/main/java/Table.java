@@ -10,6 +10,8 @@ import java.util.Date;
 import java.util.Hashtable;
 import java.util.Iterator;
 import java.util.LinkedList;
+import java.util.Map.Entry;
+import java.util.TreeMap;
 import java.util.Vector;
 
 @SuppressWarnings({ "rawtypes", "unchecked", "unused" })
@@ -274,6 +276,8 @@ public class Table implements Serializable {
 	 * @throws IOException            when I/O failure occurs
 	 * @throws ClassNotFoundException when loading fails
 	 */
+
+	// MISSING remove references from the index after succesful delete
 	public void deleteBS(Hashtable<String, Object> htblColNameValue) throws IOException, ClassNotFoundException {
 		if (htblColNameValue.containsKey(clusteringKeyColumn)) { // do binary search if clustering key value is provided
 			// binary search using clustering key value
@@ -302,37 +306,58 @@ public class Table implements Serializable {
 			}
 		} else { // do linear search
 
-			// use first index that is in table
-			GridIndex gridIndex = indices.firstElement();
-
-			Iterator<Bucket.Pair> itr = gridIndex.get(htblColNameValue);
-
-			if (!itr.hasNext())
-				System.out.println("error"); // just for debugging
-
-			while (itr.hasNext()) {
-				System.out.println(itr.next());
+			// pick the best grid index to use based on columns in index
+			GridIndex gridIndex = null;
+			int max = 0;
+			for (GridIndex gi : indices) {
+				int score = 0;
+				for (String colName : htblColNameValue.keySet()) {
+					score += gi.getColumns().contains(colName) ? 1 : 0;
+				}
+				if (score > max) {
+					max = score;
+					gridIndex = gi;
+				}
 			}
 
-			// **************************************SHOULD BE UNCOMMENTED
+			if (gridIndex == null) {
+				System.out.println("ERROR");
+			}
 
-			// ObjectInputStream ois = null;
-			// // loop over available pages
-			// for (int i = 0; i < pages.size(); ++i) {
-			// // load page to memory
-			// ois = new ObjectInputStream(new FileInputStream(path + pages.get(i)));
-			// Page page = (Page) ois.readObject();
+			if (gridIndex != null) {
 
-			// // delete tuples in page with corresponding values
-			// page.delete(htblColNameValue);
+				// System.out.println(gridIndex.getColumns());
+				TreeMap<String, LinkedList<Integer>> pageNameRows = gridIndex.get(htblColNameValue);
 
-			// // if page becomes empty after deletion then delete the page from disk
-			// if (page.isEmpty()) {
-			// deletePages(i, 1);
-			// i--;
-			// }
-			// ois.close();
-			// }
+				// loop over all pairs supplied
+				for (Entry<String, LinkedList<Integer>> e : pageNameRows.entrySet()) {
+					String pageName = e.getKey();
+					// System.out.print(pageName + ": ");
+					// System.out.print(e.getValue() + "\n");
+					Page page = getPage(pageName);
+					page.deleteAllIndices(e.getValue(), htblColNameValue);
+					if (page.isEmpty()) {
+						deletePage(pageName);
+					}
+				}
+
+			} else { // insted of loading buckets and pages, just linear search and load pages only
+
+				// loop over available pages
+				for (int i = 0; i < pages.size(); ++i) {
+					// load page to memory
+					Page page = getPage(i);
+
+					// delete tuples in page with corresponding values
+					page.delete(htblColNameValue);
+
+					// if page becomes empty after deletion then delete the page from disk
+					if (page.isEmpty()) {
+						deletePages(i, 1);
+						i--;
+					}
+				}
+			}
 		}
 	}
 
@@ -490,6 +515,15 @@ public class Table implements Serializable {
 		save();
 	}
 
+	private void deletePage(String pageName) throws IOException {
+		File f = new File(path + pageName);
+		f.delete();
+		int pageIdx = pages.indexOf(pageName);
+		maxKey.remove(pageIdx);
+		pages.remove(pageIdx);
+		save();
+	}
+
 	private void save() throws IOException {
 		File f = new File(path + tableName + ".class");
 		if (f.exists()) {
@@ -534,6 +568,13 @@ public class Table implements Serializable {
 
 	private Page getPage(int idx) throws IOException, ClassNotFoundException {
 		ObjectInputStream ois = new ObjectInputStream(new FileInputStream(path + pages.get(idx)));
+		Page page = (Page) ois.readObject();
+		ois.close();
+		return page;
+	}
+
+	private Page getPage(String pageName) throws IOException, ClassNotFoundException {
+		ObjectInputStream ois = new ObjectInputStream(new FileInputStream(path + pageName));
 		Page page = (Page) ois.readObject();
 		ois.close();
 		return page;

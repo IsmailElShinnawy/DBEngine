@@ -3,8 +3,10 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.ObjectOutputStream;
 import java.io.Serializable;
+import java.util.Collections;
 import java.util.Date;
 import java.util.Hashtable;
+import java.util.LinkedList;
 import java.util.Map.Entry;
 import java.util.Vector;
 
@@ -269,6 +271,39 @@ public class Page implements Serializable {
 		}
 	}
 
+	private boolean deleteAtIndex(int idx, Hashtable<String, Object> htblColNameValue) {
+		boolean flag = true;
+
+		for (Entry<String, Object> e : htblColNameValue.entrySet()) {
+			if (tuples.get(idx).getValues().get(e.getKey()) == null) {
+				flag = false;
+			} else {
+				flag &= tuples.get(idx).checkKeyValue(e.getKey(), e.getValue());
+			}
+		}
+
+		if (flag) {
+			tuples.remove(idx);
+			numberOfElements--;
+			return true;
+		}
+		return false;
+	}
+
+	public void deleteAllIndices(LinkedList<Integer> idxs, Hashtable<String, Object> htblColNameValue)
+			throws FileNotFoundException, IOException {
+		Collections.sort(idxs); // sorts the positions
+		int dec = 0;
+		for (Integer idx : idxs) {
+			if (deleteAtIndex(idx - dec, htblColNameValue)) {
+				dec += 1;
+			}
+		}
+		if (dec > 0) {
+			save();
+		}
+	}
+
 	/*
 	 * HELPER METHODS
 	 */
@@ -276,20 +311,20 @@ public class Page implements Serializable {
 	private Comparable getComparable(Object o, String type) {
 		Comparable res = null;
 		switch (type) {
-		case "java.lang.Integer":
-			res = (Integer) o;
-			break;
-		case "java.lang.String":
-			res = (String) o;
-			break;
-		case "java.lang.Double":
-			res = (Double) o;
-			break;
-		case "java.util.Date":
-			res = (Date) o;
-			break;
-		default:
-			break;
+			case "java.lang.Integer":
+				res = (Integer) o;
+				break;
+			case "java.lang.String":
+				res = (String) o;
+				break;
+			case "java.lang.Double":
+				res = (Double) o;
+				break;
+			case "java.util.Date":
+				res = (Date) o;
+				break;
+			default:
+				break;
 		}
 		return res;
 	}
@@ -341,7 +376,7 @@ public class Page implements Serializable {
 		// if tuple index then return this tuple
 		return res != -1 ? tuples.get(res) : null;
 	}
-	
+
 	public int getIndexOf(Comparable clusteringKeyValue) {
 		int lo = 0, hi = numberOfElements - 1, res = -1;
 		while (lo <= hi) {

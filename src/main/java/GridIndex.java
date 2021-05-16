@@ -9,10 +9,10 @@ import java.util.Arrays;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.Hashtable;
-import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.Map.Entry;
 import java.util.Set;
+import java.util.TreeMap;
 import java.util.Vector;
 
 public class GridIndex implements Serializable {
@@ -180,7 +180,7 @@ public class GridIndex implements Serializable {
 		}
 	}
 
-	public Iterator<Bucket.Pair> get(Hashtable<String, Object> htblColNameValue)
+	public TreeMap<String, LinkedList<Integer>> get(Hashtable<String, Object> htblColNameValue)
 			throws ClassNotFoundException, IOException {
 
 		Hashtable<String, Integer> htblColNameIdx = new Hashtable<String, Integer>();
@@ -200,9 +200,7 @@ public class GridIndex implements Serializable {
 			}
 		}
 
-		System.out.println(htblColNameIdx + "*******************************************");
-
-		LinkedList<Bucket.Pair> ll = new LinkedList<Bucket.Pair>();
+		TreeMap<String, LinkedList<Integer>> pageNameRows = new TreeMap<String, LinkedList<Integer>>();
 
 		for (int i = 0; i < grid.length; ++i) {
 			Hashtable<String, Integer> map = new Hashtable<String, Integer>();
@@ -218,19 +216,19 @@ public class GridIndex implements Serializable {
 			}
 
 			if (flag) {
-				// System.out.println("in");
-				// System.out.println(map);
-				System.out.println(i);
 				for (String bucketName : grid[i]) {
 					Bucket b = loadBucket(bucketName);
 					for (Bucket.Pair pair : b.getRefs()) {
-						ll.add(pair);
+						if (!pageNameRows.containsKey(pair.getPageName())) {
+							pageNameRows.put(pair.getPageName(), new LinkedList<Integer>());
+						}
+						pageNameRows.get(pair.getPageName()).add(pair.getRowNumber());
 					}
 				}
 			}
 		}
 
-		return ll.iterator();
+		return pageNameRows;
 	}
 
 	private int get1DIdx(Hashtable<String, Object> htblColNameValue) {
