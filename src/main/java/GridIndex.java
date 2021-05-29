@@ -180,6 +180,22 @@ public class GridIndex implements Serializable {
 		}
 	}
 
+	public void delete(TreeMap<String, LinkedList<Integer>> deletedPageNameRows)
+			throws ClassNotFoundException, IOException {
+		for (int i = 0; i < grid.length; ++i) {
+			Vector<String> vector = grid[i];
+			for (int j = 0; j < vector.size(); ++j) {
+				String bucketName = vector.get(j);
+				Bucket bucket = loadBucket(bucketName);
+				bucket.delete(deletedPageNameRows);
+				if (bucket.isEmpty()) {
+					deleteBucket(i, bucketName);
+					j--;
+				}
+			}
+		}
+	}
+
 	public TreeMap<String, LinkedList<Integer>> get(Hashtable<String, Object> htblColNameValue)
 			throws ClassNotFoundException, IOException {
 
@@ -204,7 +220,7 @@ public class GridIndex implements Serializable {
 
 		for (int i = 0; i < grid.length; ++i) {
 			Hashtable<String, Integer> map = new Hashtable<String, Integer>();
-			int res = i;
+			int res = i; // represents 1D idx
 			for (Entry<String, MinMax[]> e : colNameRanges.entrySet()) {
 				map.put(e.getKey(), res % e.getValue().length);
 				res /= e.getValue().length;

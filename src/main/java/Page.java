@@ -290,18 +290,22 @@ public class Page implements Serializable {
 		return false;
 	}
 
-	public void deleteAllIndices(LinkedList<Integer> idxs, Hashtable<String, Object> htblColNameValue)
+	public LinkedList<Integer> deleteAllIndices(LinkedList<Integer> idxs, Hashtable<String, Object> htblColNameValue)
 			throws FileNotFoundException, IOException {
-		Collections.sort(idxs); // sorts the positions
-		int dec = 0;
+		LinkedList<Integer> deleted = new LinkedList<Integer>();
+		Collections.sort(idxs, Collections.reverseOrder()); // sorts the positions
+		boolean flag = false;
 		for (Integer idx : idxs) {
-			if (deleteAtIndex(idx - dec, htblColNameValue)) {
-				dec += 1;
+			if (deleteAtIndex(idx, htblColNameValue)) {
+				// dec += 1;
+				deleted.add(idx);
+				flag = true;
 			}
 		}
-		if (dec > 0) {
+		if (flag) {
 			save();
 		}
+		return deleted;
 	}
 
 	/*

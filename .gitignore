@@ -68,3 +68,4 @@ hs_err_pid*
 /target/
 /src/main/resources/data/*
 /src/main/resources/metadata.csv
+/src/test/java/MyTests.java

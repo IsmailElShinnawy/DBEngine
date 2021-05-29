@@ -277,7 +277,7 @@ public class Table implements Serializable {
 	 * @throws ClassNotFoundException when loading fails
 	 */
 
-	// MISSING remove references from the index after succesful delete
+	// MISSING remove references from the index after successful delete
 	public void deleteBS(Hashtable<String, Object> htblColNameValue) throws IOException, ClassNotFoundException {
 		if (htblColNameValue.containsKey(clusteringKeyColumn)) { // do binary search if clustering key value is provided
 			// binary search using clustering key value
@@ -321,26 +321,32 @@ public class Table implements Serializable {
 			}
 
 			if (gridIndex == null) {
-				System.out.println("ERROR");
+				System.out.println("NO INDEX USED IN DELETE");
 			}
 
 			if (gridIndex != null) {
 
-				// System.out.println(gridIndex.getColumns());
 				TreeMap<String, LinkedList<Integer>> pageNameRows = gridIndex.get(htblColNameValue);
 
 				// loop over all pairs supplied
+				TreeMap<String, LinkedList<Integer>> deletedPageNameRows = new TreeMap<String, LinkedList<Integer>>();
 				for (Entry<String, LinkedList<Integer>> e : pageNameRows.entrySet()) {
 					String pageName = e.getKey();
 					// System.out.print(pageName + ": ");
 					// System.out.print(e.getValue() + "\n");
 					Page page = getPage(pageName);
-					page.deleteAllIndices(e.getValue(), htblColNameValue);
+					LinkedList<Integer> deleted = page.deleteAllIndices(e.getValue(), htblColNameValue);
+					if (deleted.size() > 0) {
+						deletedPageNameRows.put(pageName, deleted);
+					}
 					if (page.isEmpty()) {
 						deletePage(pageName);
 					}
 				}
-
+				for (GridIndex gi : indices) {
+					gi.delete(deletedPageNameRows);
+				}
+				save();
 			} else { // insted of loading buckets and pages, just linear search and load pages only
 
 				// loop over available pages

@@ -5,7 +5,9 @@ import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.io.Serializable;
 import java.util.Hashtable;
+import java.util.LinkedList;
 import java.util.Map.Entry;
+import java.util.TreeMap;
 import java.util.Vector;
 
 public class Bucket implements Serializable {
@@ -92,6 +94,32 @@ public class Bucket implements Serializable {
 			}
 		}
 		save();
+	}
+
+	public void delete(TreeMap<String, LinkedList<Integer>> deletedPageNameRows) throws IOException {
+		boolean save = false;
+		for (int i = 0; i < refs.size(); ++i) {
+			Pair p = refs.get(i);
+			for (Entry<String, LinkedList<Integer>> e : deletedPageNameRows.entrySet()) {
+				if (p.pageName.equals(e.getKey())) {
+					save = true;
+					if (e.getValue().contains(p.rowNumber)) {
+						refs.remove(i);
+						--i;
+					} else {
+						int count = 0;
+						for (Integer deletedRow : e.getValue()) {
+							if (p.rowNumber > deletedRow)
+								count++;
+						}
+						p.rowNumber -= count;
+					}
+					break;
+				}
+			}
+		}
+		if (save)
+			save();
 	}
 
 	public boolean isFull() {
