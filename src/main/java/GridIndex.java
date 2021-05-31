@@ -72,23 +72,24 @@ public class GridIndex implements Serializable {
 				int max = Integer.parseInt(maxValues.get(strarrColName[i]));
 				int range = max - min;
 				int step = range / cols; // step value
-				ranges = new MinMax[cols + (range % cols == 0 ? 0 : 1)];
+				ranges = new MinMax[cols + (range % cols == 0 ? 0 : 1) + 1];
 				int start = min, end = min + step;
 				for (int j = 0; j < cols; ++j) { // set ranges for each column
 					ranges[j] = new MinMax(start, end);
 					start += step;
 					end += step;
 				}
-				if (ranges.length == cols + 1) {
-					ranges[ranges.length - 1] = new MinMax(ranges[ranges.length - 2].getMax(), max);
+				if (ranges.length == cols + 2) {
+					ranges[ranges.length - 2] = new MinMax(ranges[ranges.length - 3].getMax(), max);
 				}
+				ranges[ranges.length - 1] = new MinMax(-1, -1);
 			} else if (colNameType.get(strarrColName[i]).equals("java.util.Date")) {
 				SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
 				Date min = sdf.parse(minValues.get(strarrColName[i]));
 				Date max = sdf.parse(maxValues.get(strarrColName[i]));
 				long range = (max.getTime() - min.getTime()) / (1000 * 60 * 60 * 24); // number of days difference
 				int step = (int) (range / cols);
-				ranges = new MinMax[cols + (range % cols == 0 ? 0 : 1)];
+				ranges = new MinMax[cols + (range % cols == 0 ? 0 : 1) + 1];
 				Date start = min;
 				Calendar c = Calendar.getInstance();
 				c.setTime(min);
@@ -108,9 +109,28 @@ public class GridIndex implements Serializable {
 					end = c.getTime();
 				}
 
-				if (ranges.length == cols + 1) {
-					ranges[ranges.length - 1] = new MinMax(ranges[ranges.length - 2].getMax(), max);
+				if (ranges.length == cols + 2) {
+					ranges[ranges.length - 2] = new MinMax(ranges[ranges.length - 3].getMax(), max);
 				}
+				ranges[ranges.length - 1] = new MinMax("", "");
+			} else if (colNameType.get(strarrColName[i]).equals("java.lang.Double")) {
+				double min = Double.parseDouble(minValues.get(strarrColName[i]));
+				double max = Double.parseDouble(maxValues.get(strarrColName[i]));
+				double range = max - min;
+				double step = range / (double) cols;
+				ranges = new MinMax[cols + (min + step * cols < max ? 1 : 0) + 1];
+				double start = min, end = min + step;
+				for (int j = 0; j < cols; ++j) {
+					ranges[j] = new MinMax(start, end);
+					start += step;
+					end += step;
+				}
+				if (ranges.length == cols + 2) {
+					ranges[ranges.length - 2] = new MinMax(ranges[ranges.length - 3].getMax(), max);
+				}
+				ranges[ranges.length - 1] = new MinMax(-1, -1);
+			} else if (colNameType.get(strarrColName[i]).equals("java.lang.String")) {
+
 			}
 
 			colNameRanges.put(strarrColName[i], ranges);
@@ -250,11 +270,16 @@ public class GridIndex implements Serializable {
 	private int get1DIdx(Hashtable<String, Object> htblColNameValue) {
 		Hashtable<String, Integer> colNamePos = new Hashtable<String, Integer>();
 		for (Entry<String, MinMax[]> e : colNameRanges.entrySet()) {
-			// should be casted to appropriate data type
+			// should be casted to appropriate data
 			Comparable value = (Comparable) htblColNameValue.get(e.getKey());
 
 			// should be binary search
 			MinMax[] range = e.getValue();
+
+			if (value == null) {
+				colNamePos.put(e.getKey(), range.length - 1);
+				continue;
+			}
 			for (int i = 0; i < range.length; ++i) {
 				if ((value.compareTo((Comparable) range[i].getMin()) >= 0
 						&& value.compareTo((Comparable) range[i].getMax()) < 0)

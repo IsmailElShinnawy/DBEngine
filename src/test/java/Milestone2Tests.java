@@ -6,8 +6,6 @@ import java.util.Date;
 import java.util.Hashtable;
 import java.util.Iterator;
 
-
-
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 public class Milestone2Tests {
 
@@ -41,7 +39,7 @@ public class Milestone2Tests {
         DBApp dbApp = new DBApp();
         dbApp.init();
         String table = "courses";
-        String[] index = {"date_added"};
+        String[] index = { "date_added" };
         dbApp.createIndex(table, index);
         dbApp = null;
     }
@@ -51,98 +49,111 @@ public class Milestone2Tests {
         DBApp dbApp = new DBApp();
         dbApp.init();
         String table = "pcs";
-        String[] index = {"pc_id"};
+        String[] index = { "pc_id" };
         dbApp.createIndex(table, index);
         dbApp = null;
     }
 
+    // didn't implement yet
     @Test
     public void testCreateDoubleIndex() throws Exception {
         DBApp dbApp = new DBApp();
         dbApp.init();
         String table = "transcripts";
-        String[] index = {"gpa"};
+        String[] index = { "gpa" };
         dbApp.createIndex(table, index);
         dbApp = null;
     }
 
+    // didn't implement yet
     @Test
     public void testCreateStringIndex() throws Exception {
         DBApp dbApp = new DBApp();
         dbApp.init();
         String table = "students";
-        String[] index = {"id"};
+        String[] index = { "id" };
         dbApp.createIndex(table, index);
         dbApp = null;
     }
 
+    // didn't implement yet
     @Test
     public void testCreateStringDoubleIndex() throws Exception {
         DBApp dbApp = new DBApp();
         dbApp.init();
         String table = "students";
-        String[] index = {"id", "gpa"};
+        String[] index = { "id", "gpa" };
         dbApp.createIndex(table, index);
         dbApp = null;
     }
 
+    // didn't implement yet
     @Test
     public void testCreateStringDateIndex() throws Exception {
         DBApp dbApp = new DBApp();
         dbApp.init();
         String table = "transcripts";
-        String[] index = {"course_name", "date_passed"};
+        String[] index = { "course_name", "date_passed" };
         dbApp.createIndex(table, index);
         dbApp = null;
     }
 
+    // didn't implement yet
     @Test
     public void testCreateDoubleDateIndex() throws Exception {
         DBApp dbApp = new DBApp();
         dbApp.init();
         String table = "students";
-        String[] index = {"gpa", "dob"};
+        String[] index = { "gpa", "dob" };
         dbApp.createIndex(table, index);
         dbApp = null;
     }
 
-
+    // didn't implement yet
     @Test
     public void testCreateStringStringIndex() throws Exception {
         DBApp dbApp = new DBApp();
         dbApp.init();
         String table = "students";
-        String[] index = {"first_name", "last_name"};
+        String[] index = { "first_name", "last_name" };
         dbApp.createIndex(table, index);
         dbApp = null;
     }
 
     @Test
-    public void testSelectEmptyStudents() throws Exception{
+    public void testSelectEmptyStudents() throws Exception {
         // Should return an empty iterator with no errors thrown
 
         SQLTerm[] arrSQLTerms;
         arrSQLTerms = new SQLTerm[2];
+
+        arrSQLTerms[0] = new SQLTerm();
+        arrSQLTerms[1] = new SQLTerm();
+
         arrSQLTerms[0]._strTableName = "students";
-        arrSQLTerms[0]._strColumnName= "first_name";
+        arrSQLTerms[0]._strColumnName = "first_name";
         arrSQLTerms[0]._strOperator = "=";
-        arrSQLTerms[0]._objValue ="John";
+        arrSQLTerms[0]._objValue = "John";
 
         arrSQLTerms[1]._strTableName = "students";
-        arrSQLTerms[1]._strColumnName= "gpa";
+        arrSQLTerms[1]._strColumnName = "gpa";
         arrSQLTerms[1]._strOperator = "=";
         arrSQLTerms[1]._objValue = new Double(0.7);
 
-        String[]strarrOperators = new String[1];
+        String[] strarrOperators = new String[1];
         strarrOperators[0] = "AND";
 
         DBApp dbApp = new DBApp();
         dbApp.init();
-        Iterator resultSet = dbApp.selectFromTable(arrSQLTerms , strarrOperators);
+        dbApp.printTable("students");
+        Iterator resultSet = dbApp.selectFromTable(arrSQLTerms, strarrOperators);
+        while (resultSet.hasNext()) {
+            System.out.println(resultSet.next());
+        }
     }
 
     @Test
-    public void testSelectActualStudentOR() throws Exception{
+    public void testSelectActualStudentOR() throws Exception {
         // Should return a non-empty iterator with no errors thrown
 
         BufferedReader studentsTable = new BufferedReader(new FileReader("src/main/resources/students_table.csv"));
@@ -150,7 +161,6 @@ public class Milestone2Tests {
         int c = 0;
         int finalLine = 1;
         Hashtable<String, Object> row = new Hashtable();
-
 
         while ((record = studentsTable.readLine()) != null && c <= finalLine) {
             if (c == finalLine) {
@@ -162,7 +172,6 @@ public class Milestone2Tests {
                 int year = Integer.parseInt(fields[3].trim().substring(0, 4));
                 int month = Integer.parseInt(fields[3].trim().substring(5, 7));
                 int day = Integer.parseInt(fields[3].trim().substring(8));
-
 
                 Date dob = new Date(year - 1900, month - 1, day);
                 row.put("dob", dob);
@@ -176,30 +185,38 @@ public class Milestone2Tests {
         }
         studentsTable.close();
 
-
         SQLTerm[] arrSQLTerms;
         arrSQLTerms = new SQLTerm[2];
-        arrSQLTerms[0]._strTableName = "students";
-        arrSQLTerms[0]._strColumnName= "first_name";
-        arrSQLTerms[0]._strOperator = "=";
-        arrSQLTerms[0]._objValue =row.get("first_name");
 
+        arrSQLTerms[0] = new SQLTerm();
+        arrSQLTerms[1] = new SQLTerm();
+
+        arrSQLTerms[0]._strTableName = "students";
+        arrSQLTerms[0]._strColumnName = "first_name";
+        arrSQLTerms[0]._strOperator = "=";
+        arrSQLTerms[0]._objValue = row.get("first_name");
+        System.out.println(row.get("first_name"));
 
         arrSQLTerms[1]._strTableName = "students";
-        arrSQLTerms[1]._strColumnName= "gpa";
+        arrSQLTerms[1]._strColumnName = "gpa";
         arrSQLTerms[1]._strOperator = "<=";
         arrSQLTerms[1]._objValue = row.get("gpa");
+        System.out.println(row.get("gpa"));
 
-        String[]strarrOperators = new String[1];
+        String[] strarrOperators = new String[1];
         strarrOperators[0] = "OR";
 
         DBApp dbApp = new DBApp();
         dbApp.init();
-        Iterator resultSet = dbApp.selectFromTable(arrSQLTerms , strarrOperators);
+        dbApp.printTable("students");
+        Iterator resultSet = dbApp.selectFromTable(arrSQLTerms, strarrOperators);
+        while (resultSet.hasNext()) {
+            System.out.println(resultSet.next());
+        }
     }
 
     @Test
-    public void testSelectActualStudentAND() throws Exception{
+    public void testSelectActualStudentAND() throws Exception {
         // Should return a non-empty iterator with no errors thrown
 
         BufferedReader studentsTable = new BufferedReader(new FileReader("src/main/resources/students_table.csv"));
@@ -207,7 +224,6 @@ public class Milestone2Tests {
         int c = 0;
         int finalLine = 1;
         Hashtable<String, Object> row = new Hashtable();
-
 
         while ((record = studentsTable.readLine()) != null && c <= finalLine) {
             if (c == finalLine) {
@@ -219,7 +235,6 @@ public class Milestone2Tests {
                 int year = Integer.parseInt(fields[3].trim().substring(0, 4));
                 int month = Integer.parseInt(fields[3].trim().substring(5, 7));
                 int day = Integer.parseInt(fields[3].trim().substring(8));
-
 
                 Date dob = new Date(year - 1900, month - 1, day);
                 row.put("dob", dob);
@@ -233,28 +248,36 @@ public class Milestone2Tests {
         }
         studentsTable.close();
 
-
         SQLTerm[] arrSQLTerms;
         arrSQLTerms = new SQLTerm[2];
-        arrSQLTerms[0]._strTableName = "students";
-        arrSQLTerms[0]._strColumnName= "first_name";
-        arrSQLTerms[0]._strOperator = "=";
-        arrSQLTerms[0]._objValue =row.get("first_name");
 
+        arrSQLTerms[0] = new SQLTerm();
+        arrSQLTerms[1] = new SQLTerm();
+
+        arrSQLTerms[0]._strTableName = "students";
+        arrSQLTerms[0]._strColumnName = "first_name";
+        arrSQLTerms[0]._strOperator = "=";
+        arrSQLTerms[0]._objValue = row.get("first_name");
+
+        System.out.println(row.get("first_name"));
 
         arrSQLTerms[1]._strTableName = "students";
-        arrSQLTerms[1]._strColumnName= "gpa";
+        arrSQLTerms[1]._strColumnName = "gpa";
         arrSQLTerms[1]._strOperator = "=";
         arrSQLTerms[1]._objValue = row.get("gpa");
 
-        String[]strarrOperators = new String[1];
+        System.out.println(row.get("gpa"));
+
+        String[] strarrOperators = new String[1];
         strarrOperators[0] = "AND";
-// select * from Student where name = John Noor OR  gpa = 1.5;
+        // select * from Student where name = John Noor OR gpa = 1.5;
         DBApp dbApp = new DBApp();
         dbApp.init();
-        Iterator resultSet = dbApp.selectFromTable(arrSQLTerms , strarrOperators);
+        Iterator resultSet = dbApp.selectFromTable(arrSQLTerms, strarrOperators);
+        while (resultSet.hasNext()) {
+            System.out.println(resultSet.next());
+        }
     }
-
 
     private void createStudentTable(DBApp dbApp) throws Exception {
         // String CK
@@ -284,7 +307,6 @@ public class Milestone2Tests {
         dbApp.createTable(tableName, "id", htblColNameType, minValues, maxValues);
     }
 
-
     private void createCoursesTable(DBApp dbApp) throws Exception {
         // Date CK
         String tableName = "courses";
@@ -294,7 +316,6 @@ public class Milestone2Tests {
         htblColNameType.put("course_id", "java.lang.String");
         htblColNameType.put("course_name", "java.lang.String");
         htblColNameType.put("hours", "java.lang.Integer");
-
 
         Hashtable<String, String> minValues = new Hashtable<>();
         minValues.put("date_added", "1901-01-01");
@@ -337,7 +358,6 @@ public class Milestone2Tests {
         dbApp.createTable(tableName, "gpa", htblColNameType, minValues, maxValues);
     }
 
-
     private void createPCsTable(DBApp dbApp) throws Exception {
         // Integer CK
         String tableName = "pcs";
@@ -345,7 +365,6 @@ public class Milestone2Tests {
         Hashtable<String, String> htblColNameType = new Hashtable<String, String>();
         htblColNameType.put("pc_id", "java.lang.Integer");
         htblColNameType.put("student_id", "java.lang.String");
-
 
         Hashtable<String, String> minValues = new Hashtable<>();
         minValues.put("pc_id", "0");

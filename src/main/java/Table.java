@@ -259,7 +259,7 @@ public class Table implements Serializable {
 			// update all indices knowing the page name and knowing the position of the
 			// tuple
 			for (GridIndex gi : indices) {
-				gi.insert(htblColNameValue, pages.get(res), page.getIndexOf(clusteringKeyValue));
+				gi.insert(updatedTuple.getValues(), pages.get(res), page.getIndexOf(clusteringKeyValue));
 			}
 
 			save();
