@@ -267,6 +267,80 @@ public class GridIndex implements Serializable {
 		return pageNameRows;
 	}
 
+	public TreeMap<String, LinkedList<Integer>> select(SQLTerm sqlTerms[], String ops[])
+			throws ClassNotFoundException, IOException {
+		TreeMap<String, LinkedList<Integer>> trmpPageNameRows = new TreeMap<String, LinkedList<Integer>>();
+
+		int idxs[] = new int[sqlTerms.length];
+		Arrays.fill(idxs, -1);
+		int j = 0;
+		for (SQLTerm sqlTerm : sqlTerms) {
+			Comparable value = (Comparable) sqlTerm._objValue;
+
+			if (colNameRanges.containsKey(sqlTerm._strColumnName)) {
+				MinMax range[] = colNameRanges.get(sqlTerm._strColumnName);
+				for (int i = 0; i < range.length - 1; ++i) {
+					if ((value.compareTo((Comparable) range[i].getMin()) >= 0
+							&& value.compareTo((Comparable) range[i].getMax()) < 0)
+							|| (i == range.length - 1 && value.compareTo((Comparable) range[i].getMin()) >= 0
+									&& value.compareTo((Comparable) range[i].getMax()) <= 0)) {
+						// htblSqlTermIndex.put(sqlTerm, i);
+						idxs[j] = i;
+						break;
+					}
+				}
+			}
+			++j;
+		}
+
+		for (int i = 0; i < grid.length; ++i) {
+			// map represents the position in each range for this 1D position
+			Hashtable<String, Integer> map = new Hashtable<String, Integer>();
+			int res = i; // represents 1D idx
+			for (Entry<String, MinMax[]> e : colNameRanges.entrySet()) {
+				map.put(e.getKey(), res % e.getValue().length);
+				res /= e.getValue().length;
+			}
+
+			// System.out.println(Arrays.toString(idxs));
+			boolean flag = false;
+			for (int k = 0; k < idxs.length; ++k) {
+				if (idxs[k] != -1) {
+					switch (sqlTerms[k]._strOperator) {
+						case "=":
+							flag |= idxs[k] == map.get(sqlTerms[k]._strColumnName);
+							break;
+						case ">":
+						case ">=":
+							flag |= map.get(sqlTerms[k]._strColumnName) >= idxs[k];
+							break;
+						case "<":
+						case "<=":
+							flag |= map.get(sqlTerms[k]._strColumnName) <= idxs[k];
+							break;
+						default:
+							break;
+					}
+				}
+			}
+
+			if (flag) {
+				// System.out.println(i);
+				for (String bucketName : grid[i]) {
+					Bucket b = loadBucket(bucketName);
+					for (Bucket.Pair pair : b.getRefs()) {
+						if (!trmpPageNameRows.containsKey(pair.getPageName())) {
+							trmpPageNameRows.put(pair.getPageName(), new LinkedList<Integer>());
+						}
+						trmpPageNameRows.get(pair.getPageName()).add(pair.getRowNumber());
+					}
+				}
+			}
+		}
+
+		return trmpPageNameRows;
+	}
+
 	private int get1DIdx(Hashtable<String, Object> htblColNameValue) {
 		Hashtable<String, Integer> colNamePos = new Hashtable<String, Integer>();
 		for (Entry<String, MinMax[]> e : colNameRanges.entrySet()) {

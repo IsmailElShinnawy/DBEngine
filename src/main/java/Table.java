@@ -277,7 +277,6 @@ public class Table implements Serializable {
 	 * @throws ClassNotFoundException when loading fails
 	 */
 
-	// MISSING remove references from the index after successful delete
 	public void deleteBS(Hashtable<String, Object> htblColNameValue) throws IOException, ClassNotFoundException {
 		if (htblColNameValue.containsKey(clusteringKeyColumn)) { // do binary search if clustering key value is provided
 			// binary search using clustering key value
@@ -320,9 +319,9 @@ public class Table implements Serializable {
 				}
 			}
 
-			if (gridIndex == null) {
-				System.out.println("NO INDEX USED IN DELETE");
-			}
+			// if (gridIndex == null) {
+			// System.out.println("NO INDEX USED IN DELETE");
+			// }
 
 			if (gridIndex != null) {
 
@@ -370,114 +369,187 @@ public class Table implements Serializable {
 	public Iterator select(SQLTerm[] sqlTerms, String[] ops, Hashtable<String, String> htblColNameType)
 			throws IOException, ClassNotFoundException {
 
-		// should binary search if have clustering key
+		int max = 0;
+		GridIndex indexToUse = null;
+		for (GridIndex gi : indices) {
+			int score = 0;
+			for (SQLTerm sqlTerm : sqlTerms) {
+				score += gi.getColumns().contains(sqlTerm._strColumnName) ? 1 : 0;
+			}
+			if (score > max) {
+				max = score;
+				indexToUse = gi;
+			}
+		}
+
 		LinkedList<Tuple> ll = new LinkedList<Tuple>();
-
-		boolean and = ops[0].toLowerCase().equals("and");
-
-		for (int i = 0; i < pages.size(); ++i) {
-			Page page = getPage(i);
-
-			for (Tuple t : page.getTuples()) {
-				if ((and && checkAND(t, sqlTerms, htblColNameType))
-						|| (!and && checkOR(t, sqlTerms, htblColNameType))) {
-					ll.add(t);
+		if (indexToUse != null) {
+			// use index for select
+			TreeMap<String, LinkedList<Integer>> trmpPageNameRows = indexToUse.select(sqlTerms, ops);
+			System.out.println(trmpPageNameRows);
+			for (Entry<String, LinkedList<Integer>> e : trmpPageNameRows.entrySet()) {
+				String pageName = e.getKey();
+				Page page = getPage(pageName);
+				for (Integer pos : e.getValue()) {
+					Tuple t = page.getTupleAt(pos);
+					if (checkTuple(t, sqlTerms, ops)) {
+						ll.add(t);
+					}
 				}
 			}
+		} else {
+			// should binary search if have clustering key
+
+			for (int i = 0; i < pages.size(); ++i) {
+				Page page = getPage(i);
+
+				for (Tuple t : page.getTuples()) {
+					if (checkTuple(t, sqlTerms, ops)) {
+						ll.add(t);
+					}
+				}
+			}
+
 		}
 
 		return ll.listIterator();
 	}
 
-	private boolean checkAND(Tuple tuple, SQLTerm[] sqlTerms, Hashtable<String, String> htblColNameType) {
+	private boolean checkTuple(Tuple t, SQLTerm sqlTerms[], String ops[]) {
 		boolean flag = true;
-		Comparable value, tValue;
-		for (SQLTerm sqlTerm : sqlTerms) {
-			String op = sqlTerm._strOperator;
-			switch (op) {
-				case "=": // special treatment with double values
-					flag &= tuple.checkKeyValue(sqlTerm._strColumnName, sqlTerm._objValue);
+		for (int i = 0; i < sqlTerms.length; ++i) {
+			String innerOperator = sqlTerms[i]._strOperator; // =, !=, <, >, <=, >=
+			switch (innerOperator) {
+				case "=": {
+					// System.out.println("EQUAL");
+					if (i == 0) {
+						flag = t.checkKeyValue(sqlTerms[i]._strColumnName, sqlTerms[i]._objValue);
+					} else {
+						switch (ops[i - 1].toLowerCase()) {
+							case "and":
+								flag &= t.checkKeyValue(sqlTerms[i]._strColumnName, sqlTerms[i]._objValue);
+								break;
+							case "or":
+								flag |= t.checkKeyValue(sqlTerms[i]._strColumnName, sqlTerms[i]._objValue);
+								break;
+							case "xor":
+								flag ^= t.checkKeyValue(sqlTerms[i]._strColumnName, sqlTerms[i]._objValue);
+								break;
+						}
+					}
 					break;
-				case "!=":
-					flag &= !tuple.checkKeyValue(sqlTerm._strColumnName, sqlTerm._objValue);
+				}
+				case "!=": {
+					// System.out.println("NOT EQUAL");
+					if (i == 0) {
+						flag = !t.checkKeyValue(sqlTerms[i]._strColumnName, sqlTerms[i]._objValue);
+					} else {
+						switch (ops[i - 1].toLowerCase()) {
+							case "and":
+								flag &= !t.checkKeyValue(sqlTerms[i]._strColumnName, sqlTerms[i]._objValue);
+								break;
+							case "or":
+								flag |= !t.checkKeyValue(sqlTerms[i]._strColumnName, sqlTerms[i]._objValue);
+								break;
+							case "xor":
+								flag ^= !t.checkKeyValue(sqlTerms[i]._strColumnName, sqlTerms[i]._objValue);
+								break;
+						}
+					}
 					break;
-				case "<":
-					value = getComparable(sqlTerm._objValue, htblColNameType.get(sqlTerm._strColumnName));
-					// if tuple value is null??
-					tValue = getComparable(tuple.getValue(sqlTerm._strColumnName),
-							htblColNameType.get(sqlTerm._strColumnName));
-					flag &= tValue.compareTo(value) < 0;
+				}
+				case ">": {
+					// System.out.println("G THAN");
+					if (i == 0) {
+						flag = ((Comparable) t.getValue(sqlTerms[i]._strColumnName))
+								.compareTo((Comparable) sqlTerms[i]._objValue) > 0;
+					} else {
+						switch (ops[i - 1].toLowerCase()) {
+							case "and":
+								flag &= ((Comparable) t.getValue(sqlTerms[i]._strColumnName))
+										.compareTo((Comparable) sqlTerms[i]._objValue) > 0;
+								break;
+							case "or":
+								flag |= ((Comparable) t.getValue(sqlTerms[i]._strColumnName))
+										.compareTo((Comparable) sqlTerms[i]._objValue) > 0;
+								break;
+							case "xor":
+								flag ^= ((Comparable) t.getValue(sqlTerms[i]._strColumnName))
+										.compareTo((Comparable) sqlTerms[i]._objValue) > 0;
+								break;
+						}
+					}
 					break;
-				case ">":
-					value = getComparable(sqlTerm._objValue, htblColNameType.get(sqlTerm._strColumnName));
-					// if tuple value is null??
-					tValue = getComparable(tuple.getValue(sqlTerm._strColumnName),
-							htblColNameType.get(sqlTerm._strColumnName));
-					flag &= tValue.compareTo(value) > 0;
+				}
+				case ">=": {
+					// System.out.println("G THAN OR EQ");
+					if (i == 0) {
+						flag = ((Comparable) t.getValue(sqlTerms[i]._strColumnName))
+								.compareTo((Comparable) sqlTerms[i]._objValue) >= 0;
+					} else {
+						switch (ops[i - 1].toLowerCase()) {
+							case "and":
+								flag &= ((Comparable) t.getValue(sqlTerms[i]._strColumnName))
+										.compareTo((Comparable) sqlTerms[i]._objValue) >= 0;
+								break;
+							case "or":
+								flag |= ((Comparable) t.getValue(sqlTerms[i]._strColumnName))
+										.compareTo((Comparable) sqlTerms[i]._objValue) >= 0;
+								break;
+							case "xor":
+								flag ^= ((Comparable) t.getValue(sqlTerms[i]._strColumnName))
+										.compareTo((Comparable) sqlTerms[i]._objValue) >= 0;
+								break;
+						}
+					}
 					break;
-				case "<=": // special treatment with doubles
-					value = getComparable(sqlTerm._objValue, htblColNameType.get(sqlTerm._strColumnName));
-					// if tuple value is null??
-					tValue = getComparable(tuple.getValue(sqlTerm._strColumnName),
-							htblColNameType.get(sqlTerm._strColumnName));
-					flag &= tValue.compareTo(value) <= 0;
+				}
+				case "<": {
+					// System.out.println("LESS THAN");
+					if (i == 0) {
+						flag = ((Comparable) t.getValue(sqlTerms[i]._strColumnName))
+								.compareTo((Comparable) sqlTerms[i]._objValue) < 0;
+					} else {
+						switch (ops[i - 1].toLowerCase()) {
+							case "and":
+								flag &= ((Comparable) t.getValue(sqlTerms[i]._strColumnName))
+										.compareTo((Comparable) sqlTerms[i]._objValue) < 0;
+								break;
+							case "or":
+								flag |= ((Comparable) t.getValue(sqlTerms[i]._strColumnName))
+										.compareTo((Comparable) sqlTerms[i]._objValue) < 0;
+								break;
+							case "xor":
+								flag ^= ((Comparable) t.getValue(sqlTerms[i]._strColumnName))
+										.compareTo((Comparable) sqlTerms[i]._objValue) < 0;
+								break;
+						}
+					}
 					break;
-				case ">=":
-					value = getComparable(sqlTerm._objValue, htblColNameType.get(sqlTerm._strColumnName));
-					// if tuple value is null??
-					tValue = getComparable(tuple.getValue(sqlTerm._strColumnName),
-							htblColNameType.get(sqlTerm._strColumnName));
-					flag &= tValue.compareTo(value) >= 0;
+				}
+				case "<=": {
+					// System.out.println("LESS THAN OR EQUAL");
+					if (i == 0) {
+						flag = ((Comparable) t.getValue(sqlTerms[i]._strColumnName))
+								.compareTo((Comparable) sqlTerms[i]._objValue) <= 0;
+					} else {
+						switch (ops[i - 1].toLowerCase()) {
+							case "and":
+								flag &= ((Comparable) t.getValue(sqlTerms[i]._strColumnName))
+										.compareTo((Comparable) sqlTerms[i]._objValue) <= 0;
+								break;
+							case "or":
+								flag |= ((Comparable) t.getValue(sqlTerms[i]._strColumnName))
+										.compareTo((Comparable) sqlTerms[i]._objValue) <= 0;
+								break;
+							case "xor":
+								flag ^= ((Comparable) t.getValue(sqlTerms[i]._strColumnName))
+										.compareTo((Comparable) sqlTerms[i]._objValue) <= 0;
+								break;
+						}
+					}
 					break;
-				default:
-					break;
-			}
-		}
-		return flag;
-	}
-
-	private boolean checkOR(Tuple tuple, SQLTerm[] sqlTerms, Hashtable<String, String> htblColNameType) {
-		boolean flag = false;
-		Comparable value, tValue;
-		for (SQLTerm sqlTerm : sqlTerms) {
-			String op = sqlTerm._strOperator;
-			switch (op) {
-				case "=": // special treatment with double values
-					flag |= tuple.checkKeyValue(sqlTerm._strColumnName, sqlTerm._objValue);
-					break;
-				case "!=":
-					flag |= !tuple.checkKeyValue(sqlTerm._strColumnName, sqlTerm._objValue);
-					break;
-				case "<":
-					value = getComparable(sqlTerm._objValue, htblColNameType.get(sqlTerm._strColumnName));
-					// if tuple value is null??
-					tValue = getComparable(tuple.getValue(sqlTerm._strColumnName),
-							htblColNameType.get(sqlTerm._strColumnName));
-					flag |= tValue.compareTo(value) < 0;
-					break;
-				case ">":
-					value = getComparable(sqlTerm._objValue, htblColNameType.get(sqlTerm._strColumnName));
-					// if tuple value is null??
-					tValue = getComparable(tuple.getValue(sqlTerm._strColumnName),
-							htblColNameType.get(sqlTerm._strColumnName));
-					flag |= tValue.compareTo(value) > 0;
-					break;
-				case "<=": // special treatment with doubles
-					value = getComparable(sqlTerm._objValue, htblColNameType.get(sqlTerm._strColumnName));
-					// if tuple value is null??
-					tValue = getComparable(tuple.getValue(sqlTerm._strColumnName),
-							htblColNameType.get(sqlTerm._strColumnName));
-					flag |= tValue.compareTo(value) <= 0;
-					break;
-				case ">=":
-					value = getComparable(sqlTerm._objValue, htblColNameType.get(sqlTerm._strColumnName));
-					// if tuple value is null??
-					tValue = getComparable(tuple.getValue(sqlTerm._strColumnName),
-							htblColNameType.get(sqlTerm._strColumnName));
-					flag |= tValue.compareTo(value) >= 0;
-					break;
-				default:
-					break;
+				}
 			}
 		}
 		return flag;
