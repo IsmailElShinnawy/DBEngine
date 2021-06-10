@@ -386,7 +386,6 @@ public class Table implements Serializable {
 		if (indexToUse != null) {
 			// use index for select
 			TreeMap<String, LinkedList<Integer>> trmpPageNameRows = indexToUse.select(sqlTerms, ops);
-			System.out.println(trmpPageNameRows);
 			for (Entry<String, LinkedList<Integer>> e : trmpPageNameRows.entrySet()) {
 				String pageName = e.getKey();
 				Page page = getPage(pageName);

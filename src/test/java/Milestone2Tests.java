@@ -31,6 +31,7 @@ public class Milestone2Tests {
         int limit = 500;
 
         insertStudentRecords(dbApp, limit);
+        // dbApp.printTable("students");
         dbApp = null;
     }
 
@@ -41,6 +42,7 @@ public class Milestone2Tests {
         String table = "courses";
         String[] index = { "date_added" };
         dbApp.createIndex(table, index);
+        // dbApp.printIndexFromTable(0, "courses");
         dbApp = null;
     }
 
@@ -51,10 +53,10 @@ public class Milestone2Tests {
         String table = "pcs";
         String[] index = { "pc_id" };
         dbApp.createIndex(table, index);
+        // dbApp.printIndexFromTable(0, "pcs");
         dbApp = null;
     }
 
-    // didn't implement yet
     @Test
     public void testCreateDoubleIndex() throws Exception {
         DBApp dbApp = new DBApp();
@@ -62,10 +64,10 @@ public class Milestone2Tests {
         String table = "transcripts";
         String[] index = { "gpa" };
         dbApp.createIndex(table, index);
+        // dbApp.printIndexFromTable(0, "transcripts");
         dbApp = null;
     }
 
-    // didn't implement yet
     @Test
     public void testCreateStringIndex() throws Exception {
         DBApp dbApp = new DBApp();
@@ -73,10 +75,10 @@ public class Milestone2Tests {
         String table = "students";
         String[] index = { "id" };
         dbApp.createIndex(table, index);
+        // dbApp.printIndexFromTable(0, "students");
         dbApp = null;
     }
 
-    // didn't implement yet
     @Test
     public void testCreateStringDoubleIndex() throws Exception {
         DBApp dbApp = new DBApp();
@@ -87,7 +89,6 @@ public class Milestone2Tests {
         dbApp = null;
     }
 
-    // didn't implement yet
     @Test
     public void testCreateStringDateIndex() throws Exception {
         DBApp dbApp = new DBApp();
@@ -95,10 +96,10 @@ public class Milestone2Tests {
         String table = "transcripts";
         String[] index = { "course_name", "date_passed" };
         dbApp.createIndex(table, index);
+        // dbApp.printIndexFromTable(1, table);
         dbApp = null;
     }
 
-    // didn't implement yet
     @Test
     public void testCreateDoubleDateIndex() throws Exception {
         DBApp dbApp = new DBApp();
@@ -106,6 +107,7 @@ public class Milestone2Tests {
         String table = "students";
         String[] index = { "gpa", "dob" };
         dbApp.createIndex(table, index);
+        // dbApp.printIndexFromTable(2, table);
         dbApp = null;
     }
 
@@ -117,6 +119,7 @@ public class Milestone2Tests {
         String table = "students";
         String[] index = { "first_name", "last_name" };
         dbApp.createIndex(table, index);
+        // dbApp.printIndexFromTable(3, table);
         dbApp = null;
     }
 
@@ -145,11 +148,11 @@ public class Milestone2Tests {
 
         DBApp dbApp = new DBApp();
         dbApp.init();
-        dbApp.printTable("students");
+        // dbApp.printTable("students");
         Iterator resultSet = dbApp.selectFromTable(arrSQLTerms, strarrOperators);
-        while (resultSet.hasNext()) {
-            System.out.println(resultSet.next());
-        }
+        // while (resultSet.hasNext()) {
+        // System.out.println(resultSet.next());
+        // }
     }
 
     @Test
@@ -184,7 +187,6 @@ public class Milestone2Tests {
             c++;
         }
         studentsTable.close();
-
         SQLTerm[] arrSQLTerms;
         arrSQLTerms = new SQLTerm[2];
 
@@ -195,24 +197,22 @@ public class Milestone2Tests {
         arrSQLTerms[0]._strColumnName = "first_name";
         arrSQLTerms[0]._strOperator = "=";
         arrSQLTerms[0]._objValue = row.get("first_name");
-        System.out.println(row.get("first_name"));
 
         arrSQLTerms[1]._strTableName = "students";
         arrSQLTerms[1]._strColumnName = "gpa";
         arrSQLTerms[1]._strOperator = "<=";
         arrSQLTerms[1]._objValue = row.get("gpa");
-        System.out.println(row.get("gpa"));
 
         String[] strarrOperators = new String[1];
         strarrOperators[0] = "OR";
 
         DBApp dbApp = new DBApp();
         dbApp.init();
-        dbApp.printTable("students");
+        // dbApp.printTable("students");
         Iterator resultSet = dbApp.selectFromTable(arrSQLTerms, strarrOperators);
-        while (resultSet.hasNext()) {
-            System.out.println(resultSet.next());
-        }
+        // while (resultSet.hasNext()) {
+        // System.out.println(resultSet.next());
+        // }
     }
 
     @Test
@@ -259,14 +259,10 @@ public class Milestone2Tests {
         arrSQLTerms[0]._strOperator = "=";
         arrSQLTerms[0]._objValue = row.get("first_name");
 
-        System.out.println(row.get("first_name"));
-
         arrSQLTerms[1]._strTableName = "students";
         arrSQLTerms[1]._strColumnName = "gpa";
         arrSQLTerms[1]._strOperator = "=";
         arrSQLTerms[1]._objValue = row.get("gpa");
-
-        System.out.println(row.get("gpa"));
 
         String[] strarrOperators = new String[1];
         strarrOperators[0] = "AND";
@@ -274,9 +270,9 @@ public class Milestone2Tests {
         DBApp dbApp = new DBApp();
         dbApp.init();
         Iterator resultSet = dbApp.selectFromTable(arrSQLTerms, strarrOperators);
-        while (resultSet.hasNext()) {
-            System.out.println(resultSet.next());
-        }
+        // while (resultSet.hasNext()) {
+        // System.out.println(resultSet.next());
+        // }
     }
 
     private void createStudentTable(DBApp dbApp) throws Exception {

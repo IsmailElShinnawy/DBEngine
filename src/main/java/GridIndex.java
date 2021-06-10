@@ -130,6 +130,22 @@ public class GridIndex implements Serializable {
 				}
 				ranges[ranges.length - 1] = new MinMax(-1, -1);
 			} else if (colNameType.get(strarrColName[i]).equals("java.lang.String")) {
+				ranges = new MinMax[10 + 26 + 1]; // 26 for characters, 10 for digits, 1 for null
+				int j = 0;
+				for (; j < 9; j++) {
+					ranges[j] = new MinMax(("" + j).charAt(0), ("" + (j + 1)).charAt(0));
+
+				}
+				ranges[j++] = new MinMax('9', (char) ('9' + 1));
+				char start = 'a';
+
+				for (; j < 25 + 10; j++) {
+					ranges[j] = new MinMax(start, (char) (start + 1));
+					start = (char) (start + 1);
+				}
+
+				ranges[j] = new MinMax('z', 'z');
+				ranges[ranges.length - 1] = new MinMax('\\', '\\');
 
 			}
 
@@ -145,6 +161,8 @@ public class GridIndex implements Serializable {
 		for (int i = 0; i < size; ++i) {
 			grid[i] = new Vector<String>();
 		}
+		// System.out.println(Arrays.deepToString(colNameRanges.get("first_name")));
+		// System.out.println(Arrays.deepToString(colNameRanges.get("last_name")));
 	}
 
 	public void insert(Hashtable<String, Object> htblColNameValue, String pageName, int row)
@@ -224,10 +242,14 @@ public class GridIndex implements Serializable {
 			Comparable value = (Comparable) e.getValue();
 			if (colNameRanges.containsKey(e.getKey())) {
 				MinMax range[] = colNameRanges.get(e.getKey());
-				for (int i = 0; i < range.length; ++i) {
+				for (int i = 0; i < range.length - 1; ++i) {
+					if (value instanceof java.lang.String) {
+						String sValue = (String) value;
+						value = sValue.toLowerCase().charAt(0);
+					}
 					if ((value.compareTo((Comparable) range[i].getMin()) >= 0
 							&& value.compareTo((Comparable) range[i].getMax()) < 0)
-							|| (i == range.length - 1 && value.compareTo((Comparable) range[i].getMin()) >= 0
+							|| (i == range.length - 2 && value.compareTo((Comparable) range[i].getMin()) >= 0
 									&& value.compareTo((Comparable) range[i].getMax()) <= 0)) {
 						htblColNameIdx.put(e.getKey(), i);
 						break;
@@ -280,9 +302,13 @@ public class GridIndex implements Serializable {
 			if (colNameRanges.containsKey(sqlTerm._strColumnName)) {
 				MinMax range[] = colNameRanges.get(sqlTerm._strColumnName);
 				for (int i = 0; i < range.length - 1; ++i) {
+					if (value instanceof java.lang.String) {
+						String sValue = (String) value;
+						value = sValue.toLowerCase().charAt(0);
+					}
 					if ((value.compareTo((Comparable) range[i].getMin()) >= 0
 							&& value.compareTo((Comparable) range[i].getMax()) < 0)
-							|| (i == range.length - 1 && value.compareTo((Comparable) range[i].getMin()) >= 0
+							|| (i == range.length - 2 && value.compareTo((Comparable) range[i].getMin()) >= 0
 									&& value.compareTo((Comparable) range[i].getMax()) <= 0)) {
 						// htblSqlTermIndex.put(sqlTerm, i);
 						idxs[j] = i;
@@ -354,10 +380,14 @@ public class GridIndex implements Serializable {
 				colNamePos.put(e.getKey(), range.length - 1);
 				continue;
 			}
-			for (int i = 0; i < range.length; ++i) {
+			for (int i = 0; i < range.length - 1; ++i) {
+				if (value instanceof java.lang.String) {
+					String sValue = (String) value;
+					value = sValue.toLowerCase().charAt(0);
+				}
 				if ((value.compareTo((Comparable) range[i].getMin()) >= 0
 						&& value.compareTo((Comparable) range[i].getMax()) < 0)
-						|| (i == range.length - 1 && value.compareTo((Comparable) range[i].getMin()) >= 0
+						|| (i == range.length - 2 && value.compareTo((Comparable) range[i].getMin()) >= 0
 								&& value.compareTo((Comparable) range[i].getMax()) <= 0)) {
 					colNamePos.put(e.getKey(), i);
 					break;
