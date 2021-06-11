@@ -2,6 +2,7 @@ import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
@@ -139,16 +140,20 @@ public class DBApp implements DBAppInterface {
 	@Override
 	public void createIndex(String tableName, String[] columnNames) throws DBAppException {
 		try {
-			// MISSING:
-			// validation for tableName
-			// validation for column names
-			// validation for duplicate indices (indices on the same columns)
+			if (!tableNameExists(tableName)) {
+				throw new DBAppException("Couldn't complete insertion into table `" + tableName
+						+ "` as no table with that name exists in the DB.");
+			}
+
+			validateColNames(columnNames, tableName);
 
 			// loads table from memory
 			Table table = loadTable(tableName);
 
 			// creates the index for the table
 			table.createIndex(columnNames);
+
+			updateMetadataWithIndex(tableName, columnNames);
 		} catch (ClassNotFoundException | IOException | ParseException e) {
 			e.printStackTrace();
 		}
@@ -404,6 +409,30 @@ public class DBApp implements DBAppInterface {
 		}
 	}
 
+	public void validateColNames(String colNames[], String tableName)
+			throws DBAppException, IOException, FileNotFoundException {
+		HashSet<String> tableColumns = new HashSet<String>();
+		BufferedReader br = new BufferedReader(new FileReader(new File(mainDir + "metadata.csv")));
+		br.readLine();
+		String line;
+		StringTokenizer st;
+		while ((line = br.readLine()) != null) {
+			st = new StringTokenizer(line, ",");
+			String tn = st.nextToken();
+			String cn = st.nextToken();
+			if (tn.equals(tableName)) {
+				tableColumns.add(cn); // populates the hashtable with column names and types
+			}
+		}
+		br.close();
+		for (String col : colNames) {
+			if (!tableColumns.contains(col)) {
+				throw new DBAppException("Can't creat the index on table `" + tableName
+						+ "` as the table does not contain the column `" + col + "`.");
+			}
+		}
+	}
+
 	/**
 	 * checks if clustering key value is a valid one
 	 * 
@@ -515,6 +544,39 @@ public class DBApp implements DBAppInterface {
 					+ "," + max + "\n";
 			bw.append(line);
 		}
+		bw.close();
+	}
+
+	private void updateMetadataWithIndex(String tableName, String colNames[]) throws IOException {
+		BufferedReader br = new BufferedReader(new FileReader(new File(mainDir + "metadata.csv")));
+		HashSet<String> hs = new HashSet<String>();
+		for (String s : colNames)
+			hs.add(s);
+		br.readLine();
+		String line;
+		StringTokenizer st;
+		StringBuilder sb = new StringBuilder();
+		while ((line = br.readLine()) != null) {
+			st = new StringTokenizer(line, ",");
+			String tn = st.nextToken();
+			String cn = st.nextToken();
+			String ct = st.nextToken();
+			boolean isCK = Boolean.parseBoolean(st.nextToken());
+			boolean isIdxed = Boolean.parseBoolean(st.nextToken()); // skips indexing for now
+			String min = st.nextToken();
+			String max = st.nextToken();
+			if (tn.equals(tableName)) {
+				sb.append(String.format("%s,%s,%s,%s,%s,%s,%s\n", tn, cn, ct, isCK, hs.contains(cn) ? "true" : "false",
+						min, max));
+			} else {
+				sb.append(String.format("%s,%s,%s,%s,%s,%s,%s\n", tn, cn, ct, isCK, isIdxed, min, max));
+			}
+		}
+		br.close();
+
+		BufferedWriter bw = new BufferedWriter(new FileWriter(mainDir + "/metadata.csv", false));
+		bw.append("Table Name,Column Name,Column Type,ClusteringKey,Indexed,min,max\n");
+		bw.write(sb.toString());
 		bw.close();
 	}
 

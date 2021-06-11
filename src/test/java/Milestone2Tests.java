@@ -111,7 +111,6 @@ public class Milestone2Tests {
         dbApp = null;
     }
 
-    // didn't implement yet
     @Test
     public void testCreateStringStringIndex() throws Exception {
         DBApp dbApp = new DBApp();
