@@ -14,7 +14,7 @@ A simple implementation of a DB engine in Java, supporting creation of tables, i
 2. Printing the tables and the indices using the printTable(String) and the printIndexFromTable(int, String) methods
 
 
-## Contributers
+## Contributors
 
 Ismail El Shinnawy 46-4847
 
